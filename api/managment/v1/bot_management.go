@@ -13,6 +13,7 @@ type GetBotBindListReq struct {
 
 type BotBindMap struct {
 	ID             int    `json:"id"`
+	Account        string `json:"account"`
 	Name           string `json:"name"`
 	NumberOfGroups int    `json:"number_of_groups"`
 	NumberOfUsers  int    `json:"number_of_users"`
@@ -27,9 +28,10 @@ type GetBotBindListRes struct {
 }
 
 type AddBotReq struct {
-	g.Meta `path:"/bot/bind" tags:"bot" method:"post" summary:"添加机器人"`
-	Name   string `json:"name" v:"required"`
-	Alias  string `json:"alias" v:"required"`
+	g.Meta   `path:"/bot/bind" tags:"bot" method:"post" summary:"添加机器人"`
+	Name     string `json:"name" v:"required" dc:"机器人名称"`
+	Account  string `json:"account" v:"required" dc:"机器人账号"`
+	Greeting string `json:"greeting" dc:"欢迎语"`
 }
 
 type AddBotRes struct {

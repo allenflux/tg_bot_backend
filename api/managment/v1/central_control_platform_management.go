@@ -41,7 +41,8 @@ type UpdateCentralControlRes struct {
 
 type PutCentralControlReq struct {
 	g.Meta `path:"/central-control" tags:"central-control" method:"put" summary:"编辑中控平台"`
-	Name   string `json:"name"`
+	ID     int    `json:"id" v:"required"`
+	Name   string `json:"name" v:"required"`
 	Note   string `json:"note" `
 }
 

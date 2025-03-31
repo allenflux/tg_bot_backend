@@ -12,11 +12,11 @@ type GetRoleListReq struct {
 }
 
 type RoleMap struct {
-	ID           int      `json:"id"`
-	Name         string   `json:"name"`
-	Bot          string   `json:"bot" dc:"关联机器人"`
-	Cmd          []string `json:"cmd" dc:"可调用指令"`
-	NumberOfBind int      `json:"number_of_bind"`
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	Bot          string `json:"bot" dc:"关联机器人"`
+	Cmd          string `json:"cmd" dc:"可调用指令"`
+	NumberOfBind int    `json:"number_of_bind"`
 }
 
 type GetRoleListRes struct {
@@ -34,9 +34,9 @@ type DelRoleListRes struct {
 
 type AddRoleListReq struct {
 	g.Meta `path:"/role" tags:"role" method:"post" summary:"新增角色数据"`
-	Name   string   `json:"name" v:"required"`
-	Bot    string   `json:"bot" v:"required"`
-	Cmd    []string `json:"cmd" dc:"可调用指令" v:"required"`
+	Name   string `json:"name" v:"required"`
+	BotID  int    `json:"bot_id" v:"required"`
+	Cmd    []int  `json:"cmd" dc:"可调用指令" v:"required"`
 }
 
 type AddRoleListRes struct {
