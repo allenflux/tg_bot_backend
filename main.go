@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gcfg"
 	_ "tg_bot_backend/internal/packed"
 
 	//_ "tg_bot_backend/internal/logic"
@@ -11,5 +13,6 @@ import (
 )
 
 func main() {
+	g.Cfg().GetAdapter().(*gcfg.AdapterFile).SetFileName("config.yaml")
 	cmd.Main.Run(gctx.GetInitCtx())
 }
