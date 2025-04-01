@@ -18,7 +18,7 @@ func (c *ControllerV1) GetRoleList(ctx context.Context, req *v1.GetRoleListReq) 
 
 	var roles []entity.Role
 	var totalCount int
-	if err := dbQuery.ScanAndCount(&roles, &totalCount, false); err != nil {
+	if err = dbQuery.ScanAndCount(&roles, &totalCount, false); err != nil {
 		g.Log().Errorf(ctx, "Failed to query and roles Group List: %v", err)
 		return nil, fmt.Errorf("failed to fetch roles list: %w", err)
 	}

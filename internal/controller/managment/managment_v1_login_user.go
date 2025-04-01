@@ -25,7 +25,7 @@ func (c *ControllerV1) LoginUser(ctx context.Context, req *v1.LoginUserReq) (res
 	dbQuery := dao.Users.Ctx(ctx).Where("name = ?", req.UserName).Where("password = ?", req.PassWord)
 	var users []entity.Users
 	var totalCount int
-	if err := dbQuery.ScanAndCount(&users, &totalCount, false); err != nil {
+	if err = dbQuery.ScanAndCount(&users, &totalCount, false); err != nil {
 		g.Log().Errorf(ctx, "Failed to query and count users List: %v", err)
 		return nil, fmt.Errorf("failed to fetch users list: %w", err)
 	}
