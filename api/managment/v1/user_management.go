@@ -57,3 +57,17 @@ type DelUserReq struct {
 
 type DelUserRes struct {
 }
+
+type LoginUserReq struct {
+	g.Meta   `path:"/login" tags:"user" method:"post" summary:"用户登录"`
+	UserName string `json:"user_name" v:"required"`
+	PassWord string `json:"pass_word" v:"required"`
+}
+
+type LoginUserRes struct {
+	Token       string   `json:"token"`
+	Avatar      string   `json:"avatar"`
+	UserName    string   `json:"user_name"`
+	Roles       []string `json:"roles"`
+	Permissions []string `json:"permissions"`
+}

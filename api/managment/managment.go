@@ -25,4 +25,5 @@ type IManagmentV1 interface {
 	AddUser(ctx context.Context, req *v1.AddUserReq) (res *v1.AddUserRes, err error)
 	EditUser(ctx context.Context, req *v1.EditUserReq) (res *v1.EditUserRes, err error)
 	DelUser(ctx context.Context, req *v1.DelUserReq) (res *v1.DelUserRes, err error)
+	LoginUser(ctx context.Context, req *v1.LoginUserReq) (res *v1.LoginUserRes, err error)
 }

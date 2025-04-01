@@ -5,6 +5,7 @@ go 1.23.3
 require (
 	github.com/gogf/gf/contrib/drivers/mysql/v2 v2.8.3
 	github.com/gogf/gf/v2 v2.8.3
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/gotd/td v0.121.0
 )
 
