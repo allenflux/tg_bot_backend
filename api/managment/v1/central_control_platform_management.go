@@ -79,3 +79,10 @@ type CentralControlGroupList2BusinessReq struct {
 type CentralControlGroupList2BusinessRes struct {
 	Data []CentralControlGroupListResData `json:"data"`
 }
+
+type CentralControlStatusSwitchReq struct {
+	g.Meta `path:"/central-control/status/switch" tags:"central-control" method:"get" summary:"更新中控状态平台"`
+	ID     int `json:"id" v:"required"`
+}
+
+type CentralControlStatusSwitchRes struct{}

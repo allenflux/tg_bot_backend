@@ -19,6 +19,7 @@ type IManagmentV1 interface {
 	DelCentralControl(ctx context.Context, req *v1.DelCentralControlReq) (res *v1.DelCentralControlRes, err error)
 	CentralControlGroupList(ctx context.Context, req *v1.CentralControlGroupListReq) (res *v1.CentralControlGroupListRes, err error)
 	CentralControlGroupList2Business(ctx context.Context, req *v1.CentralControlGroupList2BusinessReq) (res *v1.CentralControlGroupList2BusinessRes, err error)
+	CentralControlStatusSwitch(ctx context.Context, req *v1.CentralControlStatusSwitchReq) (res *v1.CentralControlStatusSwitchRes, err error)
 	GetGroupList(ctx context.Context, req *v1.GetGroupListReq) (res *v1.GetGroupListRes, err error)
 	GetRoleList(ctx context.Context, req *v1.GetRoleListReq) (res *v1.GetRoleListRes, err error)
 	DelRoleList(ctx context.Context, req *v1.DelRoleListReq) (res *v1.DelRoleListRes, err error)
