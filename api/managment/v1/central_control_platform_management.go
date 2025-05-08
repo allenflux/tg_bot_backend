@@ -56,3 +56,26 @@ type DelCentralControlReq struct {
 
 type DelCentralControlRes struct {
 }
+
+type CentralControlGroupListResData struct {
+	Name string `json:"name"`
+	Link string `json:"link"`
+}
+
+type CentralControlGroupListReq struct {
+	g.Meta `path:"/central-control/customer/group" tags:"central-control" method:"get" summary:"查看中控管理平台列表中的客户群信息"`
+	ID     int `json:"id" v:"required"`
+}
+
+type CentralControlGroupListRes struct {
+	Data []CentralControlGroupListResData `json:"data"`
+}
+
+type CentralControlGroupList2BusinessReq struct {
+	g.Meta `path:"/central-control/business/group" tags:"central-control" method:"get" summary:"查看中控管理平台列表中的渠道群信息"`
+	ID     int `json:"id" v:"required"`
+}
+
+type CentralControlGroupList2BusinessRes struct {
+	Data []CentralControlGroupListResData `json:"data"`
+}

@@ -4,7 +4,7 @@
 gfcli:
   gen:
     dao:
-      - link: "mysql:root:root@tcp(127.0.0.1:3306)/tg_bot"
+      - link: "mysql:root:Baizhe@2024@tcp(127.0.0.1:33062)/tg_bot?charset=utf8mb4&parseTime=true&loc=Local"
         descriptionTag: true
 
   docker:

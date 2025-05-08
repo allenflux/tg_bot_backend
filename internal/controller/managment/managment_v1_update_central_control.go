@@ -17,7 +17,7 @@ const (
 )
 
 func (c *ControllerV1) UpdateCentralControl(ctx context.Context, req *v1.UpdateCentralControlReq) (res *v1.UpdateCentralControlRes, err error) {
-	user := &entity.CentralControl{
+	data := &entity.CentralControl{
 		Name:              req.Name,
 		Domain:            req.Domain,
 		NumberOfCustomers: 0,
@@ -26,8 +26,8 @@ func (c *ControllerV1) UpdateCentralControl(ctx context.Context, req *v1.UpdateC
 		Status:            CentralControlStatusAvailable,
 		SecretKey:         req.SecretKey,
 	}
-	_, err = dao.Users.Ctx(ctx).
-		Data(user).
+	_, err = dao.CentralControl.Ctx(ctx).
+		Data(data).
 		InsertAndGetId()
 	if err != nil {
 		g.Log().Errorf(ctx, "Failed to insert new CentralControl '%s': %v", req.Name, err)
