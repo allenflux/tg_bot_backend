@@ -9,6 +9,36 @@ const (
 	EnumUserStatusDisable EnumsUserStatus = 1
 )
 
+const (
+	BotStatus = iota
+	BotStatusAvailable
+	BotStatusUnAvailable
+)
+
+const (
+	UserStatus = 0
+	UserAvailable
+	UserUnAvailable
+)
+
+const (
+	CentralControlStatus = iota
+	CentralControlStatusAvailable
+	CentralControlStatusUnAvailable
+)
+
+const (
+	GroupType = iota
+	GroupTypeForCustomer
+	GroupTypeForBusiness
+)
+
+const (
+	GreetingStatus = iota
+	GreetingStatusAvailable
+	GreetingStatusUnAvailable
+)
+
 func (e EnumsUserStatus) IsValid() bool {
 	return e >= EnumUserStatusDisable && e <= EnumUserStatusEnable
 }

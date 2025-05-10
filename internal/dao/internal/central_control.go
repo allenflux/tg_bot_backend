@@ -13,9 +13,10 @@ import (
 
 // CentralControlDao is the data access object for the table central_control.
 type CentralControlDao struct {
-	table   string                // table is the underlying table name of the DAO.
-	group   string                // group is the database configuration group name of the current DAO.
-	columns CentralControlColumns // columns contains all the column names of Table for convenient usage.
+	table    string                // table is the underlying table name of the DAO.
+	group    string                // group is the database configuration group name of the current DAO.
+	columns  CentralControlColumns // columns contains all the column names of Table for convenient usage.
+	handlers []gdb.ModelHandler    // handlers for customized model modification.
 }
 
 // CentralControlColumns defines and stores column names for the table central_control.
@@ -43,11 +44,12 @@ var centralControlColumns = CentralControlColumns{
 }
 
 // NewCentralControlDao creates and returns a new DAO object for table data access.
-func NewCentralControlDao() *CentralControlDao {
+func NewCentralControlDao(handlers ...gdb.ModelHandler) *CentralControlDao {
 	return &CentralControlDao{
-		group:   "default",
-		table:   "central_control",
-		columns: centralControlColumns,
+		group:    "default",
+		table:    "central_control",
+		columns:  centralControlColumns,
+		handlers: handlers,
 	}
 }
 
@@ -73,7 +75,11 @@ func (dao *CentralControlDao) Group() string {
 
 // Ctx creates and returns a Model for the current DAO. It automatically sets the context for the current operation.
 func (dao *CentralControlDao) Ctx(ctx context.Context) *gdb.Model {
-	return dao.DB().Model(dao.table).Safe().Ctx(ctx)
+	model := dao.DB().Model(dao.table)
+	for _, handler := range dao.handlers {
+		model = handler(model)
+	}
+	return model.Safe().Ctx(ctx)
 }
 
 // Transaction wraps the transaction logic using function f.

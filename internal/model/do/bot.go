@@ -18,4 +18,5 @@ type Bot struct {
 	GreetingStatus interface{} //
 	Status         interface{} //
 	Photo          interface{} //
+	BotToken       interface{} //
 }

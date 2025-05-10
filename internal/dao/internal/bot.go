@@ -13,9 +13,10 @@ import (
 
 // BotDao is the data access object for the table bot.
 type BotDao struct {
-	table   string     // table is the underlying table name of the DAO.
-	group   string     // group is the database configuration group name of the current DAO.
-	columns BotColumns // columns contains all the column names of Table for convenient usage.
+	table    string             // table is the underlying table name of the DAO.
+	group    string             // group is the database configuration group name of the current DAO.
+	columns  BotColumns         // columns contains all the column names of Table for convenient usage.
+	handlers []gdb.ModelHandler // handlers for customized model modification.
 }
 
 // BotColumns defines and stores column names for the table bot.
@@ -27,6 +28,7 @@ type BotColumns struct {
 	GreetingStatus string //
 	Status         string //
 	Photo          string //
+	BotToken       string //
 }
 
 // botColumns holds the columns for the table bot.
@@ -38,14 +40,16 @@ var botColumns = BotColumns{
 	GreetingStatus: "greeting_status",
 	Status:         "status",
 	Photo:          "photo",
+	BotToken:       "bot_token",
 }
 
 // NewBotDao creates and returns a new DAO object for table data access.
-func NewBotDao() *BotDao {
+func NewBotDao(handlers ...gdb.ModelHandler) *BotDao {
 	return &BotDao{
-		group:   "default",
-		table:   "bot",
-		columns: botColumns,
+		group:    "default",
+		table:    "bot",
+		columns:  botColumns,
+		handlers: handlers,
 	}
 }
 
@@ -71,7 +75,11 @@ func (dao *BotDao) Group() string {
 
 // Ctx creates and returns a Model for the current DAO. It automatically sets the context for the current operation.
 func (dao *BotDao) Ctx(ctx context.Context) *gdb.Model {
-	return dao.DB().Model(dao.table).Safe().Ctx(ctx)
+	model := dao.DB().Model(dao.table)
+	for _, handler := range dao.handlers {
+		model = handler(model)
+	}
+	return model.Safe().Ctx(ctx)
 }
 
 // Transaction wraps the transaction logic using function f.

@@ -13,4 +13,5 @@ type Bot struct {
 	GreetingStatus int    `json:"greetingStatus" orm:"greeting_status" description:""` //
 	Status         int    `json:"status"         orm:"status"          description:""` //
 	Photo          string `json:"photo"          orm:"photo"           description:""` //
+	BotToken       string `json:"botToken"       orm:"bot_token"       description:""` //
 }
