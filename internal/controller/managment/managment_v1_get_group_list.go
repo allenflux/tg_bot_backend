@@ -5,16 +5,11 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	commonApi "tg_bot_backend/api/common"
+	"tg_bot_backend/internal/consts"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/model/entity"
 
 	"tg_bot_backend/api/managment/v1"
-)
-
-const (
-	GroupType = iota
-	GroupTypeForCustomer
-	GroupTypeForBusiness
 )
 
 func (c *ControllerV1) GetGroupList(ctx context.Context, req *v1.GetGroupListReq) (res *v1.GetGroupListRes, err error) {
@@ -26,7 +21,7 @@ func (c *ControllerV1) GetGroupList(ctx context.Context, req *v1.GetGroupListReq
 		dbQuery = dbQuery.Where("name LIKE ?", "%"+req.KeyWordSearch+"%")
 	}
 
-	if req.GroupType != GroupType {
+	if req.GroupType != consts.GroupType {
 		dbQuery = dbQuery.Where("type = ?", req.GroupType)
 	}
 

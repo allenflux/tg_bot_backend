@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
+	"tg_bot_backend/internal/consts"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/model/entity"
 
@@ -15,7 +16,7 @@ func (c *ControllerV1) CentralControlGroupList2Business(ctx context.Context, req
 
 	var groups []entity.Group
 	var totalCount int
-	if err := dao.Group.Ctx(ctx).Where("central_control_id = ?", centralControlId).Where("type = ?", GroupTypeForBusiness).ScanAndCount(&groups, &totalCount, false); err != nil {
+	if err := dao.Group.Ctx(ctx).Where("central_control_id = ?", centralControlId).Where("type = ?", consts.GroupTypeForBusiness).ScanAndCount(&groups, &totalCount, false); err != nil {
 		g.Log().Errorf(ctx, "Failed to query and count GroupsList: %v", err)
 		return nil, fmt.Errorf("failed to fetch group list: %w", err)
 	}

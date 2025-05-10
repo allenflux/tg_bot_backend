@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
+	"tg_bot_backend/internal/consts"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/model/entity"
 
@@ -26,13 +27,13 @@ func (c *ControllerV1) CentralControlStatusSwitch(ctx context.Context, req *v1.C
 		return nil, fmt.Errorf(" Invalid id : %w", err)
 	}
 
-	status := CentralControlStatus
+	status := consts.CentralControlStatus
 
 	switch centrals[0].Status {
-	case CentralControlStatusAvailable:
-		status = CentralControlStatusUnAvailable
-	case CentralControlStatusUnAvailable:
-		status = CentralControlStatusAvailable
+	case consts.CentralControlStatusAvailable:
+		status = consts.CentralControlStatusUnAvailable
+	case consts.CentralControlStatusUnAvailable:
+		status = consts.CentralControlStatusAvailable
 	default:
 		panic("unhandled default case")
 	}
