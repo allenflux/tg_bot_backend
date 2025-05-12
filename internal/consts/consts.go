@@ -43,6 +43,10 @@ var UserPermissionMap = map[string]int{
 	"管理员": 1,
 }
 
+var PermissionUserMap = map[int]string{
+	1: "管理员",
+}
+
 func (e EnumsUserStatus) IsValid() bool {
 	return e >= EnumUserStatusDisable && e <= EnumUserStatusEnable
 }

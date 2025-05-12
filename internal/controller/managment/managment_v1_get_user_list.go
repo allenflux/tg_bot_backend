@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
 	commonApi "tg_bot_backend/api/common"
+	"tg_bot_backend/internal/consts"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/model/entity"
 
@@ -39,7 +40,7 @@ func (c *ControllerV1) GetUserList(ctx context.Context, req *v1.GetUserListReq) 
 			ID:         user.Id,
 			Account:    user.Account,
 			Name:       user.Name,
-			Role:       user.Role,
+			Role:       consts.PermissionUserMap[user.Role],
 			Status:     user.Status,
 			CreateTime: user.CreateTime,
 		}
