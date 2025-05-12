@@ -27,6 +27,7 @@ type IManagmentV1 interface {
 	GetRoleList(ctx context.Context, req *v1.GetRoleListReq) (res *v1.GetRoleListRes, err error)
 	DelRoleList(ctx context.Context, req *v1.DelRoleListReq) (res *v1.DelRoleListRes, err error)
 	AddRoleList(ctx context.Context, req *v1.AddRoleListReq) (res *v1.AddRoleListRes, err error)
+	GetBotCmdList(ctx context.Context, req *v1.GetBotCmdListReq) (res *v1.GetBotCmdListRes, err error)
 	GetRoute(ctx context.Context, req *v1.GetRouteReq) (res *v1.GetRouteRes, err error)
 	GetUserList(ctx context.Context, req *v1.GetUserListReq) (res *v1.GetUserListRes, err error)
 	AddUser(ctx context.Context, req *v1.AddUserReq) (res *v1.AddUserRes, err error)

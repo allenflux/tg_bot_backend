@@ -34,10 +34,21 @@ type DelRoleListRes struct {
 
 type AddRoleListReq struct {
 	g.Meta `path:"/role" tags:"role" method:"post" summary:"新增角色数据"`
-	Name   string `json:"name" v:"required"`
-	BotID  int    `json:"bot_id" v:"required"`
-	Cmd    []int  `json:"cmd" dc:"可调用指令" v:"required"`
+	Name   string   `json:"name" v:"required"`
+	BotID  int      `json:"bot_id" v:"required"`
+	Cmd    []string `json:"cmd" dc:"可调用指令,从/role/cmd" v:"required"`
 }
 
 type AddRoleListRes struct {
+}
+
+type GetBotCmdListReq struct {
+	g.Meta `path:"/role/cmd" tags:"role" method:"get" summary:"获取新增角色时使用的命令"`
+}
+
+type BotCmdData struct {
+	Cmd string `json:"cmd" dc:"命令"`
+}
+type GetBotCmdListRes struct {
+	Data []BotCmdData `json:"data"`
 }
