@@ -16,7 +16,7 @@ func (c *ControllerV1) AddUser(ctx context.Context, req *v1.AddUserReq) (res *v1
 	user := &entity.Users{
 		Account:    req.Account,
 		Name:       req.Name,
-		Role:       req.Role,
+		Role:       consts.UserPermissionMap[req.Role],
 		Status:     consts.UserAvailable,
 		CreateTime: gtime.Now(),
 		Password:   req.Password,

@@ -11,7 +11,6 @@ import (
 )
 
 type IManagmentV1 interface {
-	GetBotBindList(ctx context.Context, req *v1.GetBotBindListReq) (res *v1.GetBotBindListRes, err error)
 	AddBot(ctx context.Context, req *v1.AddBotReq) (res *v1.AddBotRes, err error)
 	DeleteBot(ctx context.Context, req *v1.DeleteBotReq) (res *v1.DeleteBotRes, err error)
 	UpdateBot(ctx context.Context, req *v1.UpdateBotReq) (res *v1.UpdateBotRes, err error)
@@ -34,4 +33,6 @@ type IManagmentV1 interface {
 	EditUser(ctx context.Context, req *v1.EditUserReq) (res *v1.EditUserRes, err error)
 	DelUser(ctx context.Context, req *v1.DelUserReq) (res *v1.DelUserRes, err error)
 	LoginUser(ctx context.Context, req *v1.LoginUserReq) (res *v1.LoginUserRes, err error)
+	UserStatusSwitch(ctx context.Context, req *v1.UserStatusSwitchReq) (res *v1.UserStatusSwitchRes, err error)
+	UserPermission(ctx context.Context, req *v1.UserPermissionReq) (res *v1.UserPermissionRes, err error)
 }

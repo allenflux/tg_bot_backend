@@ -16,7 +16,7 @@ const (
 )
 
 const (
-	UserStatus = 0
+	UserStatus = iota
 	UserAvailable
 	UserUnAvailable
 )
@@ -38,6 +38,10 @@ const (
 	GreetingStatusAvailable
 	GreetingStatusUnAvailable
 )
+
+var UserPermissionMap = map[string]int{
+	"管理员": 1,
+}
 
 func (e EnumsUserStatus) IsValid() bool {
 	return e >= EnumUserStatusDisable && e <= EnumUserStatusEnable

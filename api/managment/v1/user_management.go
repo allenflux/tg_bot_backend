@@ -32,7 +32,7 @@ type AddUserReq struct {
 	Account  string `json:"account" v:"required"`
 	Name     string `json:"name" v:"required"`
 	Password string `json:"password" v:"required"`
-	Role     int    `json:"role" v:"required"`
+	Role     string `json:"role" v:"required"`
 }
 
 type AddUserRes struct {
@@ -70,4 +70,24 @@ type LoginUserRes struct {
 	UserName    string   `json:"user_name"`
 	Roles       []string `json:"roles"`
 	Permissions []string `json:"permissions"`
+}
+
+type UserStatusSwitchReq struct {
+	g.Meta `path:"/user/status/switch" tags:"user" method:"get" summary:"切换用户状态"`
+	ID     int `json:"id" v:"required"`
+}
+
+type UserStatusSwitchRes struct{}
+
+type UserPermissionReq struct {
+	g.Meta `path:"/user/permission" tags:"user" method:"get" summary:"用户权限列表"`
+}
+
+type UserPermissionData struct {
+	Name     string `json:"name" dc:"只提交这个字段"`
+	Describe string `json:"describe"`
+}
+
+type UserPermissionRes struct {
+	Data []UserPermissionData `json:"data"`
 }
