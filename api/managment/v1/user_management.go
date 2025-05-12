@@ -18,7 +18,7 @@ type UserMap struct {
 	Account    string      `json:"account"`
 	Name       string      `json:"name"`
 	Role       string      `json:"role"`
-	Status     int         `json:"status" dc:"1-禁用 2-可用"`
+	Status     int         `json:"status" dc:"2-禁用 1-可用"`
 	CreateTime *gtime.Time `json:"create_time"`
 }
 

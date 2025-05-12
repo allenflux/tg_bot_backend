@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/frame/g"
+	"tg_bot_backend/internal/consts"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/middleware"
 	"tg_bot_backend/internal/model/entity"
@@ -22,7 +23,7 @@ type JWTClaims struct {
 }
 
 func (c *ControllerV1) LoginUser(ctx context.Context, req *v1.LoginUserReq) (res *v1.LoginUserRes, err error) {
-	dbQuery := dao.Users.Ctx(ctx).Where("name = ?", req.UserName).Where("password = ?", req.PassWord)
+	dbQuery := dao.Users.Ctx(ctx).Where("account = ?", req.UserName).Where("password = ?", req.PassWord)
 	var users []entity.Users
 	var totalCount int
 	if err = dbQuery.ScanAndCount(&users, &totalCount, false); err != nil {
@@ -32,6 +33,11 @@ func (c *ControllerV1) LoginUser(ctx context.Context, req *v1.LoginUserReq) (res
 	if totalCount == 0 {
 		g.Log().Errorf(ctx, "Invalid login credentials: %v", err)
 		return nil, fmt.Errorf("invalid login credentials: %w", err)
+	}
+
+	if users[0].Status == consts.UserUnAvailable {
+		g.Log().Errorf(ctx, "User %s is unavailable", req.UserName)
+		return nil, fmt.Errorf(" User %s is unavailable", req.UserName)
 	}
 
 	// Create claims with user information
