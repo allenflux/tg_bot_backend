@@ -1,17 +1,17 @@
 /*
- Navicat Premium Data Transfer
+ Navicat Premium Dump SQL
 
- Source Server         : localhost_3306
+ Source Server         : local_docker_mysql
  Source Server Type    : MySQL
- Source Server Version : 80300
+ Source Server Version : 90300 (9.3.0)
  Source Host           : localhost:3306
  Source Schema         : tg_bot
 
  Target Server Type    : MySQL
- Target Server Version : 80300
+ Target Server Version : 90300 (9.3.0)
  File Encoding         : 65001
 
- Date: 02/04/2025 13:21:30
+ Date: 12/05/2025 14:24:17
 */
 
 SET NAMES utf8mb4;
@@ -29,7 +29,8 @@ CREATE TABLE `bot` (
   `greeting_status` int NOT NULL,
   `status` int NOT NULL,
   `photo` varchar(255) DEFAULT NULL,
+  `bot_token` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

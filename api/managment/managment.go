@@ -15,6 +15,8 @@ type IManagmentV1 interface {
 	DeleteBot(ctx context.Context, req *v1.DeleteBotReq) (res *v1.DeleteBotRes, err error)
 	UpdateBot(ctx context.Context, req *v1.UpdateBotReq) (res *v1.UpdateBotRes, err error)
 	GetBotList(ctx context.Context, req *v1.GetBotListReq) (res *v1.GetBotListRes, err error)
+	SwitchBotStatus(ctx context.Context, req *v1.SwitchBotStatusReq) (res *v1.SwitchBotStatusRes, err error)
+	SwitchBotGreetingStatus(ctx context.Context, req *v1.SwitchBotGreetingStatusReq) (res *v1.SwitchBotGreetingStatusRes, err error)
 	CentralControlList(ctx context.Context, req *v1.CentralControlListReq) (res *v1.CentralControlListRes, err error)
 	UpdateCentralControl(ctx context.Context, req *v1.UpdateCentralControlReq) (res *v1.UpdateCentralControlRes, err error)
 	PutCentralControl(ctx context.Context, req *v1.PutCentralControlReq) (res *v1.PutCentralControlRes, err error)

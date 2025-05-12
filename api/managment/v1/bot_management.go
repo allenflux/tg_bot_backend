@@ -73,3 +73,17 @@ type GetBotListRes struct {
 	Data []GetBot `json:"data"`
 	commonApi.ListRes
 }
+
+type SwitchBotStatusReq struct {
+	g.Meta `path:"/bot/status" tags:"bot" method:"get" summary:"切换机器人状态"`
+	ID     int `json:"id" v:"required" dc:"<机器人>ID"`
+}
+
+type SwitchBotStatusRes struct{}
+
+type SwitchBotGreetingStatusReq struct {
+	g.Meta `path:"/bot/greeting/status" tags:"bot" method:"get" summary:"切换机器人欢迎语状态"`
+	ID     int `json:"id" v:"required" dc:"<机器人>ID"`
+}
+
+type SwitchBotGreetingStatusRes struct{}
