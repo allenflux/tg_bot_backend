@@ -11,4 +11,5 @@ type Role struct {
 	BotId    int    `json:"botId"    orm:"bot_id"    description:""` //
 	Cmd      string `json:"cmd"      orm:"cmd"       description:""` //
 	UserSize int    `json:"userSize" orm:"user_size" description:""` //
+	BotName  string `json:"botName"  orm:"bot_name"  description:""` //
 }

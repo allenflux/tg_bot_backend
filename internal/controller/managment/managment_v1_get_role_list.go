@@ -34,8 +34,8 @@ func (c *ControllerV1) GetRoleList(ctx context.Context, req *v1.GetRoleListReq) 
 		res.Data[i] = v1.RoleMap{
 			ID:           v.Id,
 			Name:         v.Name,
-			Bot:          "v.BotId",
-			Cmd:          "v.Cmd",
+			Bot:          v.BotName,
+			Cmd:          v.Cmd,
 			NumberOfBind: v.UserSize,
 		}
 	}

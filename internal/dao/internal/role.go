@@ -26,6 +26,7 @@ type RoleColumns struct {
 	BotId    string //
 	Cmd      string //
 	UserSize string //
+	BotName  string //
 }
 
 // roleColumns holds the columns for the table role.
@@ -35,6 +36,7 @@ var roleColumns = RoleColumns{
 	BotId:    "bot_id",
 	Cmd:      "cmd",
 	UserSize: "user_size",
+	BotName:  "bot_name",
 }
 
 // NewRoleDao creates and returns a new DAO object for table data access.

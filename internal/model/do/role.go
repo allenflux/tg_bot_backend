@@ -16,4 +16,5 @@ type Role struct {
 	BotId    interface{} //
 	Cmd      interface{} //
 	UserSize interface{} //
+	BotName  interface{} //
 }
