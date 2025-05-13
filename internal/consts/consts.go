@@ -47,6 +47,18 @@ var PermissionUserMap = map[int]string{
 	1: "管理员",
 }
 
+const (
+	BotCmdTopUp  = "topup"
+	BotCmdBind   = "bind"
+	BotCmdUnbind = "unbind"
+)
+
+var BotCmdDesc = map[string]string{
+	BotCmdTopUp:  "加款",
+	BotCmdBind:   "绑定",
+	BotCmdUnbind: "解绑",
+}
+
 func (e EnumsUserStatus) IsValid() bool {
 	return e >= EnumUserStatusDisable && e <= EnumUserStatusEnable
 }

@@ -34,7 +34,7 @@ type DelRoleListRes struct {
 
 type AddRoleListReq struct {
 	g.Meta `path:"/role" tags:"role" method:"post" summary:"新增角色数据"`
-	Name   string   `json:"name" v:"required"`
+	Name   string   `json:"name" v:"required" dc:"角色名称"`
 	BotID  int      `json:"bot_id" v:"required"`
 	Cmd    []string `json:"cmd" dc:"可调用指令,从/role/cmd" v:"required"`
 }
@@ -47,8 +47,21 @@ type GetBotCmdListReq struct {
 }
 
 type BotCmdData struct {
-	Cmd string `json:"cmd" dc:"命令"`
+	Name     string `json:"name" dc:"只提交这个字段的数组就好"`
+	Describe string `json:"describe" dc:"<UNK>"`
 }
 type GetBotCmdListRes struct {
 	Data []BotCmdData `json:"data"`
+}
+
+type GetRoleBotListReq struct {
+	g.Meta `path:"/role/bot" tags:"role" method:"get" summary:"获取新增角色时使用的机器人列表"`
+}
+
+type RoleBotData struct {
+	Name string `json:"name" dc:"机器人名称"`
+	ID   int    `json:"id" dc:"机器人id"`
+}
+type GetRoleBotListRes struct {
+	Data []RoleBotData `json:"data"`
 }

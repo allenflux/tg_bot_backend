@@ -27,9 +27,12 @@ func (c *ControllerV1) UpdateBot(ctx context.Context, req *v1.UpdateBotReq) (res
 		return nil, fmt.Errorf(" Invalid id : %w", err)
 	}
 	botInfo := bots[0]
+	g.Log().Infof(ctx, "Update bot: %v", botInfo)
+	g.Log().Infof(ctx, "Update req: %v", req)
 	fillBotInfo(req, &botInfo)
+	g.Log().Infof(ctx, "Update req: %v", req)
 
-	_, err = dao.CentralControl.Ctx(ctx).
+	_, err = dao.Bot.Ctx(ctx).
 		Data(g.Map{
 			"name":      req.Name,
 			"account":   req.Account,
