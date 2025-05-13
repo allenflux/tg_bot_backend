@@ -40,7 +40,7 @@ func (c *ControllerV1) SwitchBotGreetingStatus(ctx context.Context, req *v1.Swit
 
 	_, err = dao.Bot.Ctx(ctx).
 		Data(g.Map{
-			"status": status,
+			"greeting_status": status,
 		}).
 		Where("id = ?", req.ID).
 		Update()
