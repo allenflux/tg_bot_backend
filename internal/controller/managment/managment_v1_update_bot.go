@@ -42,8 +42,8 @@ func (c *ControllerV1) UpdateBot(ctx context.Context, req *v1.UpdateBotReq) (res
 		Where("id = ?", req.ID).
 		Update()
 	if err != nil {
-		g.Log().Errorf(ctx, "Failed to update new CentralControl '%s': %v", req.ID, err)
-		return nil, fmt.Errorf("failed to update new CentralControl: %w", err)
+		g.Log().Errorf(ctx, "Failed to update new bots '%s': %v", req.ID, err)
+		return nil, fmt.Errorf("failed to update new bots: %w", err)
 	}
 	return res, err
 }

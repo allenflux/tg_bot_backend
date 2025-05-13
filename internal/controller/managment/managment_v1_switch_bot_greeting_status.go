@@ -38,7 +38,7 @@ func (c *ControllerV1) SwitchBotGreetingStatus(ctx context.Context, req *v1.Swit
 		panic("unhandled default case")
 	}
 
-	_, err = dao.CentralControl.Ctx(ctx).
+	_, err = dao.Bot.Ctx(ctx).
 		Data(g.Map{
 			"status": status,
 		}).
