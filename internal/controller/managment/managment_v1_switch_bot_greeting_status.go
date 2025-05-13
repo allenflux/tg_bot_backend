@@ -29,7 +29,7 @@ func (c *ControllerV1) SwitchBotGreetingStatus(ctx context.Context, req *v1.Swit
 
 	status := consts.GreetingStatus
 
-	switch bots[0].Status {
+	switch bots[0].GreetingStatus {
 	case consts.GreetingStatusAvailable:
 		status = consts.GreetingStatusUnAvailable
 	case consts.GreetingStatusUnAvailable:
