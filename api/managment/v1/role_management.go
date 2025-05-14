@@ -94,7 +94,7 @@ type SearchTgUserAccountRes struct {
 
 type GetTgUserGroupListReq struct {
 	g.Meta    `path:"/role/tg/group" tags:"role" method:"get" summary:"tg用户信息group信息"`
-	TgAccount string `json:"account" dc:"<UNK>" v:"required"`
+	TgAccount string `p:"account" dc:"<UNK>" v:"required"`
 }
 
 type TgUserGroupData struct {
