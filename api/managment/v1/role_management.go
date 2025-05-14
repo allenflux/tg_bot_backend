@@ -109,7 +109,7 @@ type GetTgUserGroupListRes struct {
 
 type GetBindTgUsersReq struct {
 	g.Meta `path:"/role/tg/bind" tags:"role" method:"get" summary:"获取已绑定的用户"`
-	RoleId int `json:"role_id" v:"required" dc:"role ID"`
+	RoleId int `p:"role_id" v:"required" dc:"role ID"`
 }
 type BindTgUsersData struct {
 	Name      string `json:"name" dc:"<UNK>"`
