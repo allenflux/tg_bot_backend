@@ -33,7 +33,7 @@ func (c *ControllerV1) GetTgUserGroupList(ctx context.Context, req *v1.GetTgUser
 	}
 
 	dbQuery = dao.Group.Ctx(ctx).
-		WhereIn("id IN ?", groupIds)
+		WhereIn("id ", groupIds)
 
 	var groups []entity.Group
 	totalCount = 0
@@ -53,7 +53,7 @@ func (c *ControllerV1) GetTgUserGroupList(ctx context.Context, req *v1.GetTgUser
 	}
 
 	dbQuery = dao.CentralControl.Ctx(ctx).
-		WhereIn("id IN ?", platformIds)
+		WhereIn("id ", platformIds)
 
 	var platforms []entity.CentralControl
 	totalCount = 0
