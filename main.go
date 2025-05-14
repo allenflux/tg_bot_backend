@@ -6,9 +6,9 @@ import (
 	"github.com/gogf/gf/v2/os/glog"
 	_ "tg_bot_backend/internal/packed"
 
-	//_ "tg_bot_backend/internal/logic"
 	_ "github.com/gogf/gf/contrib/drivers/mysql/v2"
 	"github.com/gogf/gf/v2/os/gctx"
+	"tg_bot_backend/internal/bot"
 
 	"tg_bot_backend/internal/cmd"
 )
@@ -19,5 +19,8 @@ func init() {
 
 func main() {
 	g.Cfg().GetAdapter().(*gcfg.AdapterFile).SetFileName("config.yaml")
-	cmd.Main.Run(gctx.GetInitCtx())
+	ctx := gctx.GetInitCtx()
+	bot.InitBotApiChanFromMysql(ctx, bot.AwesomeBotApiChan)
+	go bot.MakeBotApiClientPipLine(ctx, bot.AwesomeBotApiChan)
+	cmd.Main.Run(ctx)
 }
