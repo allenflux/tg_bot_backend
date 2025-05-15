@@ -10,6 +10,11 @@ import (
 	"tg_bot_backend/api/managment/v1"
 )
 
+type TreeGroupData struct {
+	Value    string               `json:"value"`
+	Children []v1.TgUserGroupData `json:"children"`
+}
+
 func (c *ControllerV1) GetTgUserGroupList(ctx context.Context, req *v1.GetTgUserGroupListReq) (res *v1.GetTgUserGroupListRes, err error) {
 	// Get Tg Users Group ID list
 	dbQuery := dao.TgUsers.Ctx(ctx).
@@ -72,6 +77,7 @@ func (c *ControllerV1) GetTgUserGroupList(ctx context.Context, req *v1.GetTgUser
 			Name:       group.Name,
 			ID:         group.Id,
 			PlatformID: group.CentralControlId,
+			Value:      group.Name,
 		})
 	}
 
@@ -80,8 +86,17 @@ func (c *ControllerV1) GetTgUserGroupList(ctx context.Context, req *v1.GetTgUser
 		resultMap[platform.Name] = groupMap[platform.Id]
 	}
 
+	treeData := make([]TreeGroupData, 0, len(resultMap))
+	for key, children := range resultMap {
+		treeData = append(treeData, TreeGroupData{
+			Value:    key,
+			Children: children,
+		})
+	}
+
 	res = &v1.GetTgUserGroupListRes{
-		Data: resultMap,
+		Data:     resultMap,
+		Resource: treeData,
 	}
 
 	return res, nil

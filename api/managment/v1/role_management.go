@@ -101,10 +101,12 @@ type TgUserGroupData struct {
 	Name       string `json:"name" dc:"<UNK>"`
 	ID         int    `json:"id" dc:"<最终提交的group数组的入参>id"`
 	PlatformID int    `json:"platform_id" dc:"<<UNK>ID>"`
+	Value      string `json:"value" dc:"<UNK>"`
 }
 
 type GetTgUserGroupListRes struct {
-	Data map[string][]TgUserGroupData `json:"data"`
+	Data     map[string][]TgUserGroupData `json:"data"`
+	Resource interface{}                  `json:"resource"`
 }
 
 type GetBindTgUsersReq struct {
