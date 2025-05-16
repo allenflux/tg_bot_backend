@@ -16,4 +16,9 @@ type TgUsers struct {
 	GroupId   interface{} //
 	TgName    interface{} //
 	RoleId    interface{} //
+	FirstName interface{} //
+	LastName  interface{} //
+	IsBot     interface{} //
+	Phone     interface{} //
+	TgId      interface{} //
 }

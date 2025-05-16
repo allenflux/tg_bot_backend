@@ -14,4 +14,5 @@ type Group struct {
 	Size             int    `json:"size"             orm:"size"               description:""` //
 	BotSize          int    `json:"botSize"          orm:"bot_size"           description:""` //
 	RoleSize         int    `json:"roleSize"         orm:"role_size"          description:""` //
+	GroupChatId      string `json:"groupChatId"      orm:"group_chat_id"      description:""` //
 }

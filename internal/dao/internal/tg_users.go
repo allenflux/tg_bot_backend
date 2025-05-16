@@ -26,6 +26,11 @@ type TgUsersColumns struct {
 	GroupId   string //
 	TgName    string //
 	RoleId    string //
+	FirstName string //
+	LastName  string //
+	IsBot     string //
+	Phone     string //
+	TgId      string //
 }
 
 // tgUsersColumns holds the columns for the table tg_users.
@@ -35,6 +40,11 @@ var tgUsersColumns = TgUsersColumns{
 	GroupId:   "group_id",
 	TgName:    "tg_name",
 	RoleId:    "role_id",
+	FirstName: "first_name",
+	LastName:  "last_name",
+	IsBot:     "is_bot",
+	Phone:     "phone",
+	TgId:      "tg_id",
 }
 
 // NewTgUsersDao creates and returns a new DAO object for table data access.

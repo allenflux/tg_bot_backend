@@ -2,14 +2,28 @@ package bot
 
 import (
 	"context"
+	"encoding/json"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/frame/g"
-	"log"
+	"io"
+	"net/http"
+	"net/url"
+	"strconv"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/model/entity"
 )
 
 var AwesomeBotApiChan = make(chan *tgbotapi.BotAPI, 100)
+
+type GroupPayload struct {
+	ID           string `json:"id"`
+	Link         string `json:"link"`
+	MembersCount int    `json:"members_count"`
+	Title        string `json:"title"`
+}
+
+var AwesomeGroupChan = make(chan *GroupPayload, 100)
 
 func InitBotApiChanFromMysql(ctx context.Context, payload chan<- *tgbotapi.BotAPI) {
 	dbQuery := dao.Bot.Ctx(ctx).
@@ -53,10 +67,55 @@ func Program(ctx context.Context, bot *tgbotapi.BotAPI) {
 	u.Timeout = 60
 
 	updates := bot.GetUpdatesChan(u)
-
 	for update := range updates {
 		if update.Message != nil { // If we got a message
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+			g.Log().Infof(ctx, "[%s] %s", update.Message.From.UserName, update.Message.Text)
+			g.Log().Infof(ctx, "From ID = [%d]", update.Message.From.ID)
+			g.Log().Infof(ctx, "chatTyping = [%s]", update.Message.Chat.Type)
+			g.Log().Infof(ctx, "chatTitle = [%s]", update.Message.Chat.Title)
+			// Type of chat, can be either “private”, “group”, “supergroup” or “channel”
+			switch chatTyping := update.Message.Chat.Type; chatTyping {
+			case "group":
+				chatIdString := strconv.FormatInt(update.Message.Chat.ID, 10)
+				if ok, err := g.Redis().Exists(ctx, chatIdString); err != nil {
+					g.Log().Errorf(ctx, "Failed to check if [%s] exists: %v", chatIdString, err)
+					continue
+				} else if ok == 0 {
+					g.Log().Infof(ctx, "[%s] exists: %v", chatIdString, ok)
+				} else {
+					g.Log().Infof(ctx, "[%s] exists , will continue: %v", chatIdString, ok)
+					continue
+				}
+				chatConfig := tgbotapi.ChatConfig{
+					ChatID: update.Message.Chat.ID,
+				}
+				link, err := bot.GetInviteLink(tgbotapi.ChatInviteLinkConfig{
+					ChatConfig: chatConfig,
+				})
+				g.Log().Infof(ctx, "Link = %s", link)
+				if err != nil {
+					g.Log().Errorf(ctx, "Failed to get invite link: %v", err)
+					continue
+				}
+				membersCount, err := bot.GetChatMembersCount(tgbotapi.ChatMemberCountConfig{
+					ChatConfig: chatConfig,
+				})
+				g.Log().Infof(ctx, "MembersCount = %d", membersCount)
+				if err != nil {
+					g.Log().Errorf(ctx, "Failed to get members count: %v", err)
+					continue
+				}
+
+				groupData := GroupPayload{
+					ID:           chatIdString,
+					Link:         link,
+					MembersCount: membersCount,
+					Title:        update.Message.Chat.Title,
+				}
+				g.Log().Infof(ctx, "GroupData = %+v", groupData)
+				AwesomeGroupChan <- &groupData
+
+			}
 
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 			msg.ReplyToMessageID = update.Message.MessageID
@@ -64,4 +123,221 @@ func Program(ctx context.Context, bot *tgbotapi.BotAPI) {
 			bot.Send(msg)
 		}
 	}
+}
+
+func MakeTgGroupPipLine(ctx context.Context, payload <-chan *GroupPayload) {
+	for {
+		select {
+		case data, ok := <-payload:
+			if !ok {
+				g.Log().Error(ctx, "payload channel closed")
+				return
+			}
+			TgGroupProgram(ctx, data)
+		case <-ctx.Done():
+			g.Log().Info(ctx, "MakeTgGroupPipLine closed")
+			return
+		}
+	}
+}
+
+type TgUser struct {
+	FirstName string `json:"first_name"`
+	ID        int64  `json:"id"`
+	IsBot     bool   `json:"is_bot"`
+	LastName  string `json:"last_name"`
+	Phone     string `json:"phone"`
+	Username  string `json:"username"`
+}
+
+func TgGroupProgram(ctx context.Context, data *GroupPayload) {
+	//	Check Mysql
+	if ok, err := dao.Group.Ctx(ctx).Where("group_chat_id = ?", data.ID).Exist(); err != nil {
+		g.Log().Errorf(ctx, "Failed to check if [%s] exists: %v", data.ID, err)
+	} else if ok {
+		g.Log().Infof(ctx, "[%s] exists", data.ID)
+		if _, err = g.Redis().Set(ctx, data.ID, "true"); err != nil {
+			g.Log().Errorf(ctx, "Failed to set true: %v", err)
+		}
+		return
+	}
+	//	Get Group Members Info
+	value, err := g.Cfg().Get(ctx, "tg_bot_assistant.address")
+	if err != nil {
+		g.Log().Errorf(ctx, "Failed to get tg_bot_assistant.address: %v", err)
+		return
+	}
+	fullLink := value.String() + url.QueryEscape(data.Link)
+	g.Log().Infof(ctx, "tg_bot_assistant address : [%s]", fullLink)
+	resp, err := http.Get(fullLink)
+	if err != nil {
+		g.Log().Errorf(ctx, "Failed to get http resp [%s]: %v", fullLink, err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		g.Log().Errorf(ctx, "Failed to read http resp [%s]: %v", fullLink, err)
+		return
+	}
+
+	kind, out, err := parseAPIResponseFlexible(ctx, body)
+	if err != nil {
+		g.Log().Errorf(ctx, "Failed to parse http resp [%s]: %v", fullLink, err)
+		return
+	}
+	switch kind {
+	case paresKindInvalid:
+		g.Log().Errorf(ctx, "Invalid kind: %s", kind)
+	case paresKindError:
+		g.Log().Errorf(ctx, "Invalid kind: %s", kind)
+		g.Log().Infof(ctx, "Invalid out: %s", out)
+	case paresKindUnknown:
+		g.Log().Errorf(ctx, "Unknown kind: %s", kind)
+		g.Log().Infof(ctx, "Invalid out: %s", out)
+	case paresKindUserArray:
+		g.Log().Infof(ctx, "Normal kind: %s", kind)
+		var tgUsers []TgUser
+		if err := json.Unmarshal(body, &tgUsers); err != nil {
+			g.Log().Warning(ctx, "Failed to parse user array structure:", err)
+			return
+		}
+		err = SaveGroupAndUsers(ctx, data, tgUsers)
+		if err != nil {
+			g.Log().Error(ctx, "Failed to save group and users:", err)
+			return
+		}
+		if _, err = g.Redis().Set(ctx, data.ID, "true"); err != nil {
+			g.Log().Errorf(ctx, "Failed to set true: %v", err)
+		}
+	}
+
+}
+
+const (
+	paresKindInvalid   = "invalid"
+	paresKindError     = "error"
+	paresKindUnknown   = "unknown"
+	paresKindUserArray = "user_array"
+)
+
+func parseAPIResponseFlexible(ctx context.Context, data []byte) (kind string, output string, err error) {
+	var result any
+	if err := json.Unmarshal(data, &result); err != nil {
+		g.Log().Error(ctx, "Failed to unmarshal JSON:", err)
+		return paresKindInvalid, "", err
+	}
+
+	switch v := result.(type) {
+	case map[string]any:
+		// Check if it's an error structure
+		if errMsg, ok := v["error"]; ok {
+			g.Log().Info(ctx, "Detected error structure.")
+			out, _ := json.MarshalIndent(map[string]any{"error": errMsg}, "", "  ")
+			return paresKindError, string(out), nil
+		}
+		g.Log().Warning(ctx, "Unknown map structure detected.")
+		out, _ := json.MarshalIndent(v, "", "  ")
+		return paresKindUnknown, string(out), nil
+
+	case []any:
+		// Assume it's a user array structure
+		g.Log().Info(ctx, "Detected user array structure.")
+		out, _ := json.MarshalIndent(v, "", "  ")
+		return paresKindUserArray, string(out), nil
+
+	default:
+		g.Log().Warning(ctx, "Unrecognized JSON root type.")
+		return paresKindUnknown, "", nil
+	}
+}
+
+// SaveGroupAndUsers inserts group info and unique users into the database.
+func SaveGroupAndUsers(ctx context.Context, data *GroupPayload, tgUsers []TgUser) error {
+	// Start transaction
+	return g.DB().Transaction(ctx, func(ctx context.Context, tx gdb.TX) error {
+		// Check if group already exists
+		exists, err := dao.Group.Ctx(ctx).Where(g.Map{
+			"group_chat_id": data.ID,
+		}).One()
+		if err != nil {
+			g.Log().Errorf(ctx, "Failed to check group existence: %v", err)
+			return err
+		}
+
+		var groupId int64
+		if exists != nil {
+			groupId = exists["id"].Int64()
+			g.Log().Infof(ctx, "Group already exists, ID: %d", groupId)
+		} else {
+			// Insert new group
+			groupId, err = dao.Group.Ctx(ctx).Data(entity.Group{
+				Name:             data.Title,
+				CentralControlId: 0,
+				TgLink:           data.Link,
+				Type:             0,
+				Size:             data.MembersCount,
+				BotSize:          0,
+				RoleSize:         0,
+				GroupChatId:      data.ID,
+			}).InsertAndGetId()
+			if err != nil {
+				g.Log().Errorf(ctx, "Failed to insert group: %v", err)
+				return err
+			}
+			g.Log().Infof(ctx, "Inserted new group, ID: %d", groupId)
+		}
+
+		// Fetch existing users by TgId + GroupId
+		tgIds := make([]string, 0, len(tgUsers))
+		for _, user := range tgUsers {
+			tgIds = append(tgIds, strconv.FormatInt(user.ID, 10))
+		}
+
+		// Get already inserted users
+		existingMap := make(map[string]struct{})
+		if len(tgIds) > 0 {
+			list, err := dao.TgUsers.Ctx(ctx).Where("tg_id IN (?) AND group_id = ?", tgIds, groupId).Fields("tg_id").Array()
+			if err != nil {
+				g.Log().Errorf(ctx, "Failed to query existing users: %v", err)
+				return err
+			}
+			for _, v := range list {
+				existingMap[v.String()] = struct{}{}
+			}
+		}
+
+		// Filter and insert users
+		for _, user := range tgUsers {
+			tgIdStr := strconv.FormatInt(user.ID, 10)
+			if _, exists := existingMap[tgIdStr]; exists {
+				g.Log().Infof(ctx, "User already exists: %s", tgIdStr)
+				continue
+			}
+
+			isBot := 0
+			if user.IsBot {
+				isBot = 1
+			}
+
+			_, err := dao.TgUsers.Ctx(ctx).Data(entity.TgUsers{
+				TgAccount: tgIdStr,
+				GroupId:   int(groupId),
+				TgName:    user.Username,
+				RoleId:    0,
+				FirstName: user.FirstName,
+				LastName:  user.LastName,
+				IsBot:     isBot,
+				Phone:     user.Phone,
+				TgId:      tgIdStr,
+			}).Insert()
+			if err != nil {
+				g.Log().Errorf(ctx, "Failed to insert user %s: %v", tgIdStr, err)
+				return err
+			}
+			g.Log().Infof(ctx, "Inserted user: %s (%s)", tgIdStr, user.Username)
+		}
+
+		return nil
+	})
 }

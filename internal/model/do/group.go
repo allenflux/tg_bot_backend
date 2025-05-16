@@ -19,4 +19,5 @@ type Group struct {
 	Size             interface{} //
 	BotSize          interface{} //
 	RoleSize         interface{} //
+	GroupChatId      interface{} //
 }
