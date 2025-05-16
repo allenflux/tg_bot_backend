@@ -28,11 +28,11 @@ import (
 //}
 
 type AddBotReq struct {
-	g.Meta   `path:"/bot" tags:"bot" method:"post" summary:"添加机器人"`
-	Name     string `json:"name" v:"required" dc:"机器人名称"`
-	Account  string `json:"account" v:"required" dc:"机器人账号"`
+	g.Meta `path:"/bot" tags:"bot" method:"post" summary:"添加机器人"`
+	//Name     string `json:"name" v:"required" dc:"机器人名称"`
+	//Account  string `json:"account" v:"required" dc:"机器人账号"`
 	Greeting string `json:"greeting" dc:"欢迎语"`
-	BotToken string `json:"bot_token" dc:"机器人token"`
+	BotToken string `json:"bot_token" v:"required" dc:"机器人token"`
 }
 
 type AddBotRes struct {
