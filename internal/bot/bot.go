@@ -591,7 +591,9 @@ func UpdateDbCentralControl(ctx context.Context, centralControlId string) {
 		g.Map{
 			"number_of_customers": customerCount,
 			"number_of_business":  businessCount,
-		}).Update()
+		}).
+		Where("id = ?", centralControlId).
+		Update()
 	if err != nil {
 		g.Log().Errorf(ctx, "Update CentralControl Error: %v", err)
 	}
