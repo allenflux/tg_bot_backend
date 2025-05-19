@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/frame/g"
@@ -10,8 +11,10 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/model/entity"
+	"time"
 )
 
 var AwesomeBotApiChan = make(chan *tgbotapi.BotAPI, 100)
@@ -60,6 +63,15 @@ func MakeBotApiClientPipLine(ctx context.Context, payload <-chan *tgbotapi.BotAP
 	}
 }
 
+type CommandSession struct {
+	Command string
+	Step    int
+	Answers []string
+	Expires time.Time
+}
+
+var userSessions = make(map[string]*CommandSession)
+
 func Program(ctx context.Context, bot *tgbotapi.BotAPI) {
 	g.Log().Infof(ctx, "Authorized on account %s", bot.Self.UserName)
 
@@ -73,55 +85,131 @@ func Program(ctx context.Context, bot *tgbotapi.BotAPI) {
 			g.Log().Infof(ctx, "From ID = [%d]", update.Message.From.ID)
 			g.Log().Infof(ctx, "chatTyping = [%s]", update.Message.Chat.Type)
 			g.Log().Infof(ctx, "chatTitle = [%s]", update.Message.Chat.Title)
+
 			// Type of chat, can be either “private”, “group”, “supergroup” or “channel”
 			switch chatTyping := update.Message.Chat.Type; chatTyping {
 			case "group":
 				chatIdString := strconv.FormatInt(update.Message.Chat.ID, 10)
 				if ok, err := g.Redis().Exists(ctx, chatIdString); err != nil {
 					g.Log().Errorf(ctx, "Failed to check if [%s] exists: %v", chatIdString, err)
-					continue
 				} else if ok == 0 {
 					g.Log().Infof(ctx, "[%s] exists: %v", chatIdString, ok)
+					chatConfig := tgbotapi.ChatConfig{
+						ChatID: update.Message.Chat.ID,
+					}
+					link, err := bot.GetInviteLink(tgbotapi.ChatInviteLinkConfig{
+						ChatConfig: chatConfig,
+					})
+					g.Log().Infof(ctx, "Link = %s", link)
+					if err != nil {
+						g.Log().Errorf(ctx, "Failed to get invite link: %v", err)
+						continue
+					}
+					membersCount, err := bot.GetChatMembersCount(tgbotapi.ChatMemberCountConfig{
+						ChatConfig: chatConfig,
+					})
+					g.Log().Infof(ctx, "MembersCount = %d", membersCount)
+					if err != nil {
+						g.Log().Errorf(ctx, "Failed to get members count: %v", err)
+						continue
+					}
+
+					groupData := GroupPayload{
+						ID:           chatIdString,
+						Link:         link,
+						MembersCount: membersCount,
+						Title:        update.Message.Chat.Title,
+					}
+					g.Log().Infof(ctx, "GroupData = %+v", groupData)
+					AwesomeGroupChan <- &groupData
 				} else {
 					g.Log().Infof(ctx, "[%s] exists , will continue: %v", chatIdString, ok)
-					continue
 				}
-				chatConfig := tgbotapi.ChatConfig{
-					ChatID: update.Message.Chat.ID,
-				}
-				link, err := bot.GetInviteLink(tgbotapi.ChatInviteLinkConfig{
-					ChatConfig: chatConfig,
-				})
-				g.Log().Infof(ctx, "Link = %s", link)
-				if err != nil {
-					g.Log().Errorf(ctx, "Failed to get invite link: %v", err)
-					continue
-				}
-				membersCount, err := bot.GetChatMembersCount(tgbotapi.ChatMemberCountConfig{
-					ChatConfig: chatConfig,
-				})
-				g.Log().Infof(ctx, "MembersCount = %d", membersCount)
-				if err != nil {
-					g.Log().Errorf(ctx, "Failed to get members count: %v", err)
-					continue
-				}
-
-				groupData := GroupPayload{
-					ID:           chatIdString,
-					Link:         link,
-					MembersCount: membersCount,
-					Title:        update.Message.Chat.Title,
-				}
-				g.Log().Infof(ctx, "GroupData = %+v", groupData)
-				AwesomeGroupChan <- &groupData
-
 			}
-
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-
-			bot.Send(msg)
+			go handleUpdate(bot, update)
+			//bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "❌ 绑定已取消"))
 		}
+	}
+}
+
+func sessionKey(userID int64, chatID int64) string {
+	return fmt.Sprintf("%d:%d", userID, chatID)
+}
+func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	msg := update.Message
+	chat := msg.Chat
+	user := msg.From
+	fmt.Println("222222")
+	if chat.IsPrivate() {
+		return // 不支持私聊
+	}
+
+	key := sessionKey(user.ID, chat.ID)
+
+	// 处理命令（只接受带 bot username 的 /bind@BotName）
+	if msg.IsCommand() {
+		cmd := msg.Command()
+		cmdWithAt := msg.CommandWithAt()
+
+		// 忽略不带 @bot 的命令
+		if !strings.Contains(cmdWithAt, "@") || !strings.HasSuffix(cmdWithAt, "@"+bot.Self.UserName) {
+			return
+		}
+
+		switch cmd {
+		case "bind":
+			userSessions[key] = &CommandSession{
+				Command: "bind",
+				Step:    1,
+				Answers: []string{},
+				Expires: time.Now().Add(5 * time.Minute),
+			}
+			sendNextQuestion(bot, chat.ID, key)
+		case "cancel":
+			delete(userSessions, key)
+			bot.Send(tgbotapi.NewMessage(chat.ID, "❌ 绑定已取消"))
+		default:
+			bot.Send(tgbotapi.NewMessage(chat.ID, "未知命令"))
+		}
+		return
+	}
+
+	// 非命令：检查是否在会话中
+	if session, ok := userSessions[key]; ok {
+		if time.Now().After(session.Expires) {
+			delete(userSessions, key)
+			bot.Send(tgbotapi.NewMessage(chat.ID, "⏰ 会话超时，请重新输入 /bind@"+bot.Self.UserName))
+			return
+		}
+
+		// 收集用户输入
+		session.Answers = append(session.Answers, msg.Text)
+		session.Step++
+
+		if session.Step <= 2 {
+			sendNextQuestion(bot, chat.ID, key)
+		} else {
+			result := fmt.Sprintf("✅ 绑定成功：\n用户名：%s\nID：%s",
+				session.Answers[0], session.Answers[1])
+			bot.Send(tgbotapi.NewMessage(chat.ID, result))
+			delete(userSessions, key)
+		}
+	}
+}
+
+func sendNextQuestion(bot *tgbotapi.BotAPI, chatID int64, key string) {
+	session := userSessions[key]
+	var question string
+
+	switch session.Step {
+	case 1:
+		question = "请输入用户名："
+	case 2:
+		question = "请输入用户ID："
+	}
+
+	if question != "" {
+		bot.Send(tgbotapi.NewMessage(chatID, question))
 	}
 }
 

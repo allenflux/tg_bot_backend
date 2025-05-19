@@ -20,6 +20,7 @@ func init() {
 func main() {
 	g.Cfg().GetAdapter().(*gcfg.AdapterFile).SetFileName("config.yaml")
 	ctx := gctx.GetInitCtx()
+	//g.Redis().Del(ctx, "-4957481659")
 	bot.InitBotApiChanFromMysql(ctx, bot.AwesomeBotApiChan)
 	go bot.MakeBotApiClientPipLine(ctx, bot.AwesomeBotApiChan)
 	go bot.MakeTgGroupPipLine(ctx, bot.AwesomeGroupChan)
