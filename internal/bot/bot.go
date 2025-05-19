@@ -126,8 +126,7 @@ func Program(ctx context.Context, bot *tgbotapi.BotAPI) {
 					g.Log().Infof(ctx, "[%s] exists , will continue: %v", chatIdString, ok)
 				}
 			}
-			go handleUpdate(bot, update)
-			//bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "❌ 绑定已取消"))
+			go handleUpdate(ctx, bot, update)
 		}
 	}
 }
@@ -135,11 +134,16 @@ func Program(ctx context.Context, bot *tgbotapi.BotAPI) {
 func sessionKey(userID int64, chatID int64) string {
 	return fmt.Sprintf("%d:%d", userID, chatID)
 }
-func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+
+var validAnswersOfGroupType = map[string]bool{
+	"1": true,
+	"2": true,
+}
+
+func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	msg := update.Message
 	chat := msg.Chat
 	user := msg.From
-	fmt.Println("222222")
 	if chat.IsPrivate() {
 		return // 不支持私聊
 	}
@@ -157,13 +161,46 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}
 
 		switch cmd {
+		case "unbind":
+			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, "bind")
+			if !ok {
+				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+				return
+			}
+			//	直接更新DB信息
+			_, err := dao.Group.Ctx(ctx).Data(
+				g.Map{
+					"type":               0,
+					"central_contral_id": 0,
+				}).
+				Where("group_chat_id = ?", chat.ID).
+				Update()
+			if err != nil {
+				g.Log().Errorf(ctx, "Failed to update group chat: %v", err)
+				newMsg = fmt.Sprintf("Failed to update group chat: %v", err)
+				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+				return
+			}
+			g.Log().Infof(ctx, "Updated group chat with id [%d]", chat.ID)
+			newMsg = fmt.Sprintf("✅ 解绑成功 Updated group chat with id [%d]", chat.ID)
+			bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+
 		case "bind":
+
+			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, "bind")
+			if !ok {
+				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+				return
+			}
+
+			// 根据用户ID检查用户权限
 			userSessions[key] = &CommandSession{
 				Command: "bind",
 				Step:    1,
 				Answers: []string{},
 				Expires: time.Now().Add(5 * time.Minute),
 			}
+
 			sendNextQuestion(bot, chat.ID, key)
 		case "cancel":
 			delete(userSessions, key)
@@ -185,12 +222,42 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		// 收集用户输入
 		session.Answers = append(session.Answers, msg.Text)
 		session.Step++
-
+		result := ""
+		bindSuccessful := true
 		if session.Step <= 2 {
 			sendNextQuestion(bot, chat.ID, key)
 		} else {
-			result := fmt.Sprintf("✅ 绑定成功：\n用户名：%s\nID：%s",
+			result = fmt.Sprintf("✅ 绑定成功：\n中控平台ID：%s\n群类型：%s",
 				session.Answers[0], session.Answers[1])
+			// Verify Group Type
+			if _, ok := validAnswersOfGroupType[session.Answers[1]]; !ok {
+				g.Log().Errorf(ctx, "[%s] Invalid group type", session.Answers[1])
+				result = fmt.Sprintf("❌ 绑定失败 [%s] Invalid group type", session.Answers[1])
+				bindSuccessful = false
+			}
+			// Verify And Action By DB
+			if has, err := dao.CentralControl.Ctx(ctx).Where("id = ?", session.Answers[0]).Exist(); err != nil {
+				g.Log().Errorf(ctx, "Failed to check if [%s] exists: %v", session.Answers[0], err)
+				result = fmt.Sprintf("❌ 绑定失败 Failed to check if [%s] exists: %v", session.Answers[0], err)
+				bindSuccessful = false
+			} else if !has {
+				g.Log().Infof(ctx, "[%s] not exists", session.Answers[0])
+				result = fmt.Sprintf("❌ 绑定失败 [%s] not exists", session.Answers[0])
+				bindSuccessful = false
+			}
+
+			if bindSuccessful {
+				_, err := dao.Group.Ctx(ctx).Where("group_chat_id = ?", chat.ID).Data(
+					g.Map{
+						"central_control_id": session.Answers[0],
+						"type":               session.Answers[1],
+					},
+				).Update()
+				if err != nil {
+					g.Log().Errorf(ctx, "Failed to update group")
+					result = fmt.Sprintf("Failed to update group [%s] %s", session.Answers[0], err.Error())
+				}
+			}
 			bot.Send(tgbotapi.NewMessage(chat.ID, result))
 			delete(userSessions, key)
 		}
@@ -203,9 +270,9 @@ func sendNextQuestion(bot *tgbotapi.BotAPI, chatID int64, key string) {
 
 	switch session.Step {
 	case 1:
-		question = "请输入用户名："
+		question = "请输入中控平台ID："
 	case 2:
-		question = "请输入用户ID："
+		question = "请输入群组类类型(客户群输入->1 or 渠道群输入->2)："
 	}
 
 	if question != "" {
@@ -428,4 +495,65 @@ func SaveGroupAndUsers(ctx context.Context, data *GroupPayload, tgUsers []TgUser
 
 		return nil
 	})
+}
+
+func JsonArrayContains(jsonStr, target string) bool {
+	var list []string
+	err := json.Unmarshal([]byte(jsonStr), &list)
+	if err != nil {
+		return false // 如果解析失败，认为不包含
+	}
+
+	for _, item := range list {
+		if item == target {
+			return true
+		}
+	}
+
+	return false
+}
+
+// 检查用户是否拥有某个命令的权限，比如 "bind"
+func checkUserPermission(ctx context.Context, chatID int64, userID int64, command string) (bool, string) {
+	// 获取Group ID
+	var groups []entity.Group
+	var totalCount int
+	if err := dao.Group.Ctx(ctx).Where("group_chat_id = ?", chatID).ScanAndCount(&groups, &totalCount, false); err != nil {
+		g.Log().Errorf(ctx, "查询群组失败: %v", err)
+		return false, fmt.Sprintf("查询群组失败: %v", err)
+	}
+	if totalCount == 0 {
+		return false, "群组不存在"
+	}
+	groupId := groups[0].Id
+
+	// 获取用户在该群组的角色
+	var tgUsers []entity.TgUsers
+	if err := dao.Group.Ctx(ctx).Where("group_id = ?", groupId).Where("tg_id = ?", userID).ScanAndCount(&tgUsers, &totalCount, false); err != nil {
+		g.Log().Errorf(ctx, "查询群用户失败: %v", err)
+		return false, fmt.Sprintf("查询群用户失败: %v", err)
+	}
+	if totalCount == 0 {
+		return false, "无效的用户"
+	}
+	if tgUsers[0].RoleId == 0 {
+		return false, "未被授权的用户"
+	}
+
+	// 获取角色权限
+	var roles []entity.Role
+	if err := dao.Role.Ctx(ctx).Where("id = ?", tgUsers[0].RoleId).ScanAndCount(&roles, &totalCount, false); err != nil {
+		g.Log().Errorf(ctx, "查询角色失败: %v", err)
+		return false, fmt.Sprintf("查询角色失败: %v", err)
+	}
+	if totalCount == 0 {
+		return false, "无效的Role信息"
+	}
+
+	// 判断是否包含对应权限
+	if !JsonArrayContains(roles[0].Cmd, command) {
+		return false, fmt.Sprintf("没有%s权限", command)
+	}
+
+	return true, ""
 }
