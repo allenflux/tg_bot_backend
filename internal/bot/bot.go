@@ -87,7 +87,11 @@ func Program(ctx context.Context, bot *tgbotapi.BotAPI) {
 			g.Log().Infof(ctx, "chatTitle = [%s]", update.Message.Chat.Title)
 
 			// Type of chat, can be either “private”, “group”, “supergroup” or “channel”
-			switch chatTyping := update.Message.Chat.Type; chatTyping {
+			chatTyping := update.Message.Chat.Type
+			if chatTyping == "supergroup" {
+				chatTyping = "group"
+			}
+			switch chatTyping {
 			case "group":
 				chatIdString := strconv.FormatInt(update.Message.Chat.ID, 10)
 				if ok, err := g.Redis().Exists(ctx, chatIdString); err != nil {
