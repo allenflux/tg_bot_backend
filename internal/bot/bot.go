@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"tg_bot_backend/internal/consts"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/model/entity"
 	"time"
@@ -171,6 +172,8 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
 				return
 			}
+			// 获取更新之前的platform id
+			prePlatformId, _ := GetPrePlatformId(ctx, chat.ID)
 			//	直接更新DB信息
 			_, err := dao.Group.Ctx(ctx).Data(
 				g.Map{
@@ -185,6 +188,8 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
 				return
 			}
+			UpdateDbCentralControl(ctx, prePlatformId)
+			UpdateDbCentralControl(ctx, "0")
 			g.Log().Infof(ctx, "Updated group chat with id [%d]", chat.ID)
 			newMsg = fmt.Sprintf("✅ 解绑成功 Updated group chat with id [%d]", chat.ID)
 			bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
@@ -251,6 +256,9 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 			}
 
 			if bindSuccessful {
+				// 获取更新之前的platform id
+				prePlatformId, _ := GetPrePlatformId(ctx, chat.ID)
+
 				_, err := dao.Group.Ctx(ctx).Where("group_chat_id = ?", chat.ID).Data(
 					g.Map{
 						"central_control_id": session.Answers[0],
@@ -261,6 +269,8 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 					g.Log().Errorf(ctx, "Failed to update group")
 					result = fmt.Sprintf("Failed to update group [%s] %s", session.Answers[0], err.Error())
 				}
+				UpdateDbCentralControl(ctx, prePlatformId)
+				UpdateDbCentralControl(ctx, session.Answers[0])
 			}
 			bot.Send(tgbotapi.NewMessage(chat.ID, result))
 			delete(userSessions, key)
@@ -560,4 +570,47 @@ func checkUserPermission(ctx context.Context, chatID int64, userID int64, comman
 	}
 
 	return true, ""
+}
+
+func UpdateDbCentralControl(ctx context.Context, centralControlId string) {
+	businessCount, err := dao.Group.Ctx(ctx).
+		Where("central_control_id = ?", centralControlId).
+		Where("type = ?", consts.GroupTypeForBusiness).
+		Count()
+	if err != nil {
+		g.Log().Errorf(ctx, "Count Group GroupTypeForBusiness Error: %v", err)
+	}
+	customerCount, err := dao.Group.Ctx(ctx).
+		Where("central_control_id = ?", centralControlId).
+		Where("type = ?", consts.GroupTypeForCustomer).
+		Count()
+	if err != nil {
+		g.Log().Errorf(ctx, "Count Group GroupTypeForCustomer Error: %v", err)
+	}
+	_, err = dao.CentralControl.Ctx(ctx).Data(
+		g.Map{
+			"number_of_customers": customerCount,
+			"number_of_business":  businessCount,
+		}).Update()
+	if err != nil {
+		g.Log().Errorf(ctx, "Update CentralControl Error: %v", err)
+	}
+
+}
+
+func GetPrePlatformId(ctx context.Context, chatId int64) (string, error) {
+	var groups []entity.Group
+	var totalCount int
+	prePlatformId := 0
+
+	if err := dao.Group.Ctx(ctx).Where("group_chat_id = ?", chatId).ScanAndCount(&groups, &totalCount, false); err != nil {
+		g.Log().Errorf(ctx, "Failed to get group count: %v", err)
+		return "0", err
+	}
+
+	if totalCount != 0 {
+		prePlatformId = groups[0].CentralControlId
+	}
+
+	return strconv.Itoa(prePlatformId), nil
 }
