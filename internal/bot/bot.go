@@ -529,7 +529,7 @@ func checkUserPermission(ctx context.Context, chatID int64, userID int64, comman
 
 	// 获取用户在该群组的角色
 	var tgUsers []entity.TgUsers
-	if err := dao.Group.Ctx(ctx).Where("group_id = ?", groupId).Where("tg_id = ?", userID).ScanAndCount(&tgUsers, &totalCount, false); err != nil {
+	if err := dao.TgUsers.Ctx(ctx).Where("group_id = ?", groupId).Where("tg_id = ?", userID).ScanAndCount(&tgUsers, &totalCount, false); err != nil {
 		g.Log().Errorf(ctx, "查询群用户失败: %v", err)
 		return false, fmt.Sprintf("查询群用户失败: %v", err)
 	}
