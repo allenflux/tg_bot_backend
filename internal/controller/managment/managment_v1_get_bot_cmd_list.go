@@ -18,7 +18,7 @@ func (c *ControllerV1) GetBotCmdList(ctx context.Context, req *v1.GetBotCmdListR
 	res = &v1.GetBotCmdListRes{
 		Data: []v1.BotCmdData{
 			newBotCmd(consts.BotCmdBind),
-			newBotCmd(consts.BotCmdTopUp),
+			//newBotCmd(consts.BotCmdTopUp),
 			newBotCmd(consts.BotCmdUnbind),
 		},
 	}
