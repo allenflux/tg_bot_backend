@@ -26,6 +26,10 @@ const (
 // It checks for the presence and validity of the token, and sets the username
 // in the context for downstream handlers
 func JWTAuth(r *ghttp.Request) {
+	if r.Request.URL.Path == "/login" {
+		r.Middleware.Next()
+		return
+	}
 	// Get token from Authorization header
 	tokenString := r.Header.Get("Authorization")
 	if tokenString == "" {

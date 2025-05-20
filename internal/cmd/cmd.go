@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"tg_bot_backend/internal/middleware"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -19,7 +20,7 @@ var (
 		Func: func(ctx context.Context, parser *gcmd.Parser) (err error) {
 			s := g.Server()
 			s.Group("/", func(group *ghttp.RouterGroup) {
-				group.Middleware(ghttp.MiddlewareHandlerResponse)
+				group.Middleware(ghttp.MiddlewareHandlerResponse, middleware.JWTAuth)
 				group.Bind(
 					hello.NewV1(),
 					managment.NewV1(),
