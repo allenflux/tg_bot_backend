@@ -36,8 +36,8 @@ func (c *ControllerV1) UpdateBot(ctx context.Context, req *v1.UpdateBotReq) (res
 		Data(g.Map{
 			//"name":      req.Name,
 			//"account":   req.Account,
-			"greeting":  req.Greeting,
-			"bot_token": req.BotToken,
+			"greeting": req.Greeting,
+			//"bot_token": req.BotToken,
 		}).
 		Where("id = ?", req.ID).
 		Update()
@@ -55,7 +55,7 @@ func fillEmpty(target *string, source string) {
 }
 
 func fillBotInfo(req *v1.UpdateBotReq, botInfo *entity.Bot) {
-	fillEmpty(&req.BotToken, botInfo.BotToken)
+	//fillEmpty(&req.BotToken, botInfo.BotToken)
 	//fillEmpty(&req.Account, botInfo.Account)
 	fillEmpty(&req.Greeting, botInfo.Greeting)
 	//fillEmpty(&req.Name, botInfo.Name)

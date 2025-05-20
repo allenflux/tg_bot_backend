@@ -50,7 +50,7 @@ type UpdateBotReq struct {
 	//Name     string `json:"name"  dc:"机器人名称"`
 	//Account  string `json:"account"  dc:"机器人账号"`
 	Greeting string `json:"greeting" dc:"欢迎语"`
-	BotToken string `json:"bot_token" dc:"机器人token"`
+	//BotToken string `json:"bot_token" dc:"机器人token"`
 }
 type UpdateBotRes struct{}
 
