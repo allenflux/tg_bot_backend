@@ -81,11 +81,27 @@ func Program(ctx context.Context, bot *tgbotapi.BotAPI) {
 
 	updates := bot.GetUpdatesChan(u)
 	for update := range updates {
+
+		// check bot status
+		if ok, err := dao.Bot.Ctx(ctx).
+			Where("account = ?", bot.Self.ID).
+			Where("status = ?", consts.BotStatusUnAvailable).
+			Exist(); err != nil {
+			g.Log().Errorf(ctx, "Failed to query bot: %v", err)
+			continue
+		} else if ok {
+			g.Log().Infof(ctx, "BotStatusUnAvailable  bot %s", bot.Self.UserName)
+			continue
+		}
+
 		if update.Message != nil { // If we got a message
 			g.Log().Infof(ctx, "[%s] %s", update.Message.From.UserName, update.Message.Text)
 			g.Log().Infof(ctx, "From ID = [%d]", update.Message.From.ID)
 			g.Log().Infof(ctx, "chatTyping = [%s]", update.Message.Chat.Type)
 			g.Log().Infof(ctx, "chatTitle = [%s]", update.Message.Chat.Title)
+
+			// 欢迎语
+			go handleNewMembers(ctx, bot, update)
 
 			// Type of chat, can be either “private”, “group”, “supergroup” or “channel”
 			chatTyping := update.Message.Chat.Type
@@ -615,4 +631,38 @@ func GetPrePlatformId(ctx context.Context, chatId int64) (string, error) {
 	}
 
 	return strconv.Itoa(prePlatformId), nil
+}
+
+func handleNewMembers(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	if update.Message.NewChatMembers == nil {
+		return
+	}
+
+	// chet Greeting Status
+	var myBot []entity.Bot
+	var totalCount int
+	if err := dao.Bot.Ctx(ctx).Where("account = ?", bot.Self.ID).
+		ScanAndCount(&myBot, &totalCount, false); err != nil {
+		g.Log().Errorf(ctx, "Unkone Bot %d: %v", bot.Self.ID, err)
+		return
+	}
+	if totalCount == 0 {
+		g.Log().Errorf(ctx, "Invalid bot ID: %d", bot.Self.ID)
+		return
+	}
+	if myBot[0].GreetingStatus == consts.GreetingStatusUnAvailable {
+		g.Log().Infof(ctx, "GreetingStatusUnAvailable %d", myBot[0].GreetingStatus)
+		return
+	}
+	welcomeText := myBot[0].Greeting
+
+	for _, newUser := range update.Message.NewChatMembers {
+		g.Log().Infof(ctx, "New chat member %s", newUser.UserName)
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, welcomeText)
+		msg.ReplyToMessageID = update.Message.MessageID
+
+		if _, err := bot.Send(msg); err != nil {
+			g.Log().Errorf(ctx, "handleNewMembers Send Msg Error: %v", err)
+		}
+	}
 }
