@@ -10,6 +10,10 @@ import (
 )
 
 func (c *ControllerV1) PutCentralControl(ctx context.Context, req *v1.PutCentralControlReq) (res *v1.PutCentralControlRes, err error) {
+	if req.ID == 0 {
+		return nil, fmt.Errorf("invalid Id %d", req.ID)
+	}
+
 	if _, err := dao.CentralControl.Ctx(ctx).
 		Data(g.Map{
 			"name": req.Name,
