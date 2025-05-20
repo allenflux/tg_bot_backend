@@ -6,6 +6,18 @@ import (
 	"tg_bot_backend/internal/model"
 )
 
+type GetPlatformListReq struct {
+	g.Meta `path:"/group/platform" tags:"group" method:"get" summary:"查看平台列表"`
+}
+
+type GetPlatformData struct {
+	PlatformId   int    `json:"platform_id"`
+	PlatformName string `json:"platform_name"`
+}
+type GetPlatformListRes struct {
+	Data []GetPlatformData `json:"data"`
+}
+
 type GetGroupListReq struct {
 	g.Meta `path:"/group" tags:"group" method:"get" summary:"查看群组列表"`
 	model.PageReq
