@@ -111,7 +111,7 @@ var hardCodeResponse string = `
 						],
 						"showParent": true
 					}
-				},
+				}
 			]
 		},
         {
@@ -137,5 +137,4 @@ var hardCodeResponse string = `
         }
     ]
 }
-
 `
