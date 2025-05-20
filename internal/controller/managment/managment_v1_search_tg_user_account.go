@@ -13,12 +13,13 @@ import (
 
 func (c *ControllerV1) SearchTgUserAccount(ctx context.Context, req *v1.SearchTgUserAccountReq) (res *v1.SearchTgUserAccountRes, err error) {
 	dbQuery := dao.TgUsers.Ctx(ctx).
-		Page(req.PageNum, req.PageSize).
-		Order("id desc")
+		//Page(req.PageNum, req.PageSize).
+		Order("id desc").
+		Where("tg_account = ?", req.KeyWordSearch)
 
-	if req.KeyWordSearch != "" {
-		dbQuery = dbQuery.Where("tg_account LIKE ?", "%"+req.KeyWordSearch+"%")
-	}
+	//if req.KeyWordSearch != "" {
+	//	dbQuery = dbQuery.Where("tg_account LIKE ?", "%"+req.KeyWordSearch+"%")
+	//}
 
 	var tgUsers []entity.TgUsers
 	var totalCount int
