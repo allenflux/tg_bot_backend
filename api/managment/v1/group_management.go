@@ -30,3 +30,15 @@ type GetGroupListRes struct {
 	Data []GroupMap `json:"data"`
 	commonApi.ListRes
 }
+
+type GetGroupMemberDetailReq struct {
+	g.Meta `path:"/group/members" tags:"group" method:"get" summary:"获取群组人数"`
+	ID     int `json:"id" dc:"Group ID"`
+}
+type GroupMemberDetail struct {
+	TgId   string `json:"tg_id"`
+	TgName string `json:"tg_name"`
+}
+type GetGroupMemberDetailRes struct {
+	Data []GroupMemberDetail `json:"data"`
+}
