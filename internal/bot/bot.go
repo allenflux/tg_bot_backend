@@ -302,7 +302,7 @@ func sendNextQuestion(bot *tgbotapi.BotAPI, chatID int64, key string) {
 	case 1:
 		question = "请输入中控平台ID："
 	case 2:
-		question = "请输入群组类类型(客户群输入->1 or 渠道群输入->2)："
+		question = "请输入群组类型(客户群输入->1 or 渠道群输入->2)："
 	}
 
 	if question != "" {
