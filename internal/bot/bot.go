@@ -194,7 +194,7 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 			_, err := dao.Group.Ctx(ctx).Data(
 				g.Map{
 					"type":               0,
-					"central_contral_id": 0,
+					"central_control_id": 0,
 				}).
 				Where("group_chat_id = ?", chat.ID).
 				Update()
