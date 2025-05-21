@@ -1,61 +1,30 @@
-# tg_bot_backend
 
-**tg_bot_backend** is an open-source backend service built with the [GoFrame (GF)](https://goframe.org/) framework. It is designed to manage Telegram bots with powerful group tagging and task delegation capabilities. This backend interacts with Telegram bots to support group organization and user-level task management within each group.
+# 🤖 tg_bot_backend
 
-## 🌍 Overview
+`tg_bot_backend` is an open-source backend service built with Go using the GoFrame (gf) framework. It is designed to manage Telegram bots that help automate task assignments and permission management in group chats.
 
-This project targets developers and community managers seeking to automate operational tasks inside Telegram groups through a structured bot-driven approach. With `tg_bot_backend`, you can:
+---
 
-- Tag and categorize Telegram groups for better organization.
-- Grant authorized users permission to execute tasks in specific groups.
-- Integrate with external tools or scripts to streamline group workflows.
+## 🌍 Features
 
-It’s optimized for performance, scalability, and ease of integration into larger bot-based systems.
+- Assign tags to Telegram groups via bot commands
+- Authorize specific users for task-related operations
+- Interact with external services to retrieve group member info
+- Secure and modular backend service with configuration flexibility
 
-## 🚀 Features
-
-- Group tagging and identification via Telegram bot commands
-- Role-based access and task delegation for group members
-- Fast MySQL-based persistent storage and Redis caching
-- Easily extendable API structure for new task types
-- Seamless integration with external Python services
+---
 
 ## 📦 Tech Stack
 
-- **Language**: Go (with GoFrame framework)
+- **Language**: Go (Golang)
+- **Framework**: GoFrame (gf)
 - **Database**: MySQL
 - **Cache**: Redis
-- **Integration**: Telegram Bot API
-- **Deployment**: Docker-compatible
+- **External Service**: Python-based API (`tg_bot_assistant`)
 
-## 🔗 Dependencies
+---
 
-This project depends on the external Python project [**tg_bot_assistant**](https://github.com/yourusername/tg_bot_assistant), which provides Telegram group member data via a RESTful API.
-
-> 🔗 API endpoint used:
-> http://8.210.149.123:5000/get_members?group_link=<your_group_link>
-
-
-Ensure this service is running and reachable before using features related to group member queries.
-
-## 🛠️ Getting Started
-
-### Prerequisites
-
-- Go 1.18+ and [GoFrame CLI](https://goframe.org/pages/viewpage.action?pageId=1114315)
-- MySQL database instance
-- Redis instance
-- A valid Telegram Bot Token
-
-### Installation
-
-```bash
-git clone https://github.com/allenflux/tg_bot_backend.git
-cd tg_bot_backend
-gf run main.go
-```  
-
-### Configuration
+## 🛠️ Configuration
 
 Edit the configuration file `config/config.yaml` with the following content:
 
@@ -77,3 +46,124 @@ redis:
 tg_bot_assistant:
   address: http://8.210.149.123:5000/get_members?group_link=
 ```
+
+### 🏃 Running the Service
+
+To run the service in development mode:
+
+```bash
+gf run main.go
+```
+
+To build a production-ready binary:
+
+```bash
+gf build
+```
+
+Once built, you can run the compiled binary:
+
+```bash
+./tg_bot_backend
+```
+
+Make sure your `config.yaml` is in the correct location or passed via environment/config flags.
+
+---
+
+## 📖 Usage
+
+Once the bot has been added to a Telegram group and is properly authorized, it supports the following commands:
+
+- `/taggroup <tag>`  
+  Tags the current group with a label.
+
+- `/adduser <username>`  
+  Grants permission to a user for executing certain tasks in the group.
+
+- `/task <action>`  
+  Executes a predefined task associated with the current group.
+
+All commands are restricted to authorized users as configured in the backend logic.
+
+---
+
+## 🔐 Security
+
+The project includes several built-in security features:
+
+- Role-based access control for command usage
+- Telegram user ID verification
+- Secure integration with `tg_bot_assistant` via a trusted IP and endpoint
+- Input validation and protection using the GoFrame framework
+- Future support planned for JWT-based admin API authentication
+
+---
+
+## 🌍 Internationalization (i18n)
+
+Internationalization support is planned in upcoming releases. The bot will detect user or group locale and provide localized responses accordingly.
+
+---
+
+## 🔗 Dependencies
+
+This project depends on an external Python service:  
+[**tg_bot_assistant**](https://github.com/allenflux/tg_bot_assistant)
+
+This service is responsible for fetching authorized group members using the following API endpoint:
+
+```text
+http://8.210.149.123:5000/get_members?group_link=<your_group_link>
+```
+
+Make sure this service is running and accessible before using any features involving group membership validation.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! To get started:
+
+```bash
+# 1. Fork the repository
+# 2. Create your feature branch
+git checkout -b feature/your-feature-name
+
+# 3. Make your changes and commit
+git commit -am 'Add new feature'
+
+# 4. Push to your fork
+git push origin feature/your-feature-name
+
+# 5. Open a Pull Request on GitHub
+```
+
+Please follow our coding guidelines and keep commits clear and well-documented.
+
+---
+
+## 🧭 Roadmap
+
+Planned features and improvements:
+
+- [ ] Admin dashboard (web UI)
+- [ ] Multi-language (i18n) support
+- [ ] Plugin system for dynamic task extensions
+- [ ] Enhanced logging and observability
+- [ ] Group-level analytics and metrics
+
+---
+
+## 📄 License
+
+This project is released under the [MIT License](./LICENSE).
+
+---
+
+## 📬 Contact
+
+Have feedback or want to collaborate?
+
+- Open an issue on [GitHub](https://github.com/allenflux/tg_bot_backend/issues)
+- Or reach out via email or Telegram (to be added)
