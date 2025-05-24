@@ -261,13 +261,13 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 				bindSuccessful = false
 			}
 			// Verify And Action By DB
-			if has, err := dao.CentralControl.Ctx(ctx).Where("id = ?", session.Answers[0]).Exist(); err != nil {
-				g.Log().Errorf(ctx, "Failed to check if [%s] exists: %v", session.Answers[0], err)
+			if has, err := dao.CentralControl.Ctx(ctx).Where("id = ?", session.Answers[0]).Where("status = ?", consts.CentralControlStatusAvailable).Exist(); err != nil {
+				g.Log().Errorf(ctx, "Failed to check if [%s] exists or Status is Available: %v", session.Answers[0], err)
 				result = fmt.Sprintf("❌ 绑定失败 Failed to check if [%s] exists: %v", session.Answers[0], err)
 				bindSuccessful = false
 			} else if !has {
 				g.Log().Infof(ctx, "[%s] not exists", session.Answers[0])
-				result = fmt.Sprintf("❌ 绑定失败 [%s] not exists", session.Answers[0])
+				result = fmt.Sprintf("❌ 绑定失败 [%s] not exists or Status is UnAvailable", session.Answers[0])
 				bindSuccessful = false
 			}
 
