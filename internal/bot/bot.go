@@ -183,7 +183,7 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 
 		switch cmd {
 		case "unbind":
-			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, "bind")
+			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, "unbind")
 			if !ok {
 				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
 				return
