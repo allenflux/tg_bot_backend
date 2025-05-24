@@ -25,11 +25,11 @@ func (c *ControllerV1) DelCentralControl(ctx context.Context, req *v1.DelCentral
 		return &v1.DelCentralControlRes{}, nil
 	}
 	if platforms[0].NumberOfBusiness != 0 {
-		return nil, fmt.Errorf("NumberOfBusiness != 0 %d", platforms[0].NumberOfBusiness)
+		return nil, fmt.Errorf("the number of business groups is not equal to 0, so it cannot be deleted : %d", platforms[0].NumberOfBusiness)
 	}
 
 	if platforms[0].NumberOfCustomers != 0 {
-		return nil, fmt.Errorf("NumberOfCustomers != 0 %d", platforms[0].NumberOfCustomers)
+		return nil, fmt.Errorf("the number of customer groups is not equal to 0, so it cannot be deleted : %d", platforms[0].NumberOfCustomers)
 	}
 
 	if _, err := dao.CentralControl.Ctx(ctx).Where("id = ?", req.ID).Delete(); err != nil {
