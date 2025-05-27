@@ -55,6 +55,8 @@ var PermissionUserMap = map[int]string{
 }
 
 const (
+	BotCmdQF1    = "qf1"
+	BotCmdQF2    = "qf2"
 	BotCmdTopUp  = "topup"
 	BotCmdBind   = "bind"
 	BotCmdUnbind = "unbind"

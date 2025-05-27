@@ -166,93 +166,116 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 	msg := update.Message
 	chat := msg.Chat
 	user := msg.From
-	if chat.IsPrivate() {
-		return // 不支持私聊
-	}
-
 	key := sessionKey(user.ID, chat.ID)
 
-	// 处理命令（只接受带 bot username 的 /bind@BotName）
-	if msg.IsCommand() {
-		cmd := msg.Command()
-		cmdWithAt := msg.CommandWithAt()
+	if chat.IsPrivate() {
+		return
+		//处理私聊命令
+		//if msg.IsCommand() {
+		//	cmd := msg.Command()
+		//	switch cmd {
+		//	// 群发所有内容到客户群
+		//	case consts.BotCmdQF1:
+		//		userSessions[key] = &CommandSession{
+		//			Command: consts.BotCmdQF1,
+		//			Step:    1,
+		//			Answers: []string{},
+		//			Expires: time.Now().Add(5 * time.Minute),
+		//		}
+		//		sendNextQf1Question(bot, chat.ID, key)
+		//	//	群发所有内容到渠道群
+		//	case consts.BotCmdQF2:
+		//		userSessions[key] = &CommandSession{
+		//			Command: consts.BotCmdQF2,
+		//			Step:    1,
+		//			Answers: []string{},
+		//			Expires: time.Now().Add(5 * time.Minute),
+		//		}
+		//		sendNextQf1Question(bot, chat.ID, key)
+		//	}
+		//}
+	} else {
+		// 处理命令（只接受带 bot username 的 /bind@BotName）
+		if msg.IsCommand() {
+			cmd := msg.Command()
+			cmdWithAt := msg.CommandWithAt()
 
-		// 忽略不带 @bot 的命令
-		if !strings.Contains(cmdWithAt, "@") || !strings.HasSuffix(cmdWithAt, "@"+bot.Self.UserName) {
+			// 忽略不带 @bot 的命令
+			if !strings.Contains(cmdWithAt, "@") || !strings.HasSuffix(cmdWithAt, "@"+bot.Self.UserName) {
+				return
+			}
+
+			switch cmd {
+			case consts.BotCmdUnbind:
+				ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, consts.BotCmdUnbind)
+				if !ok {
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					return
+				}
+				// 获取更新之前的platform id
+				prePlatformId, _ := GetPrePlatformId(ctx, chat.ID)
+				//	直接更新DB信息
+				_, err := dao.Group.Ctx(ctx).Data(
+					g.Map{
+						"type":               0,
+						"central_control_id": 0,
+					}).
+					Where("group_chat_id = ?", chat.ID).
+					Update()
+				if err != nil {
+					g.Log().Errorf(ctx, "Failed to update group chat: %v", err)
+					newMsg = fmt.Sprintf("Failed to update group chat: %v", err)
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					return
+				}
+				UpdateDbCentralControl(ctx, prePlatformId)
+				UpdateDbCentralControl(ctx, "0")
+				g.Log().Infof(ctx, "Updated group chat with id [%d]", chat.ID)
+				newMsg = fmt.Sprintf("✅ 解绑成功 Updated group chat with id [%d]", chat.ID)
+				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+
+			case consts.BotCmdBind:
+
+				ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, consts.BotCmdBind)
+				if !ok {
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					return
+				}
+
+				// 根据用户ID检查用户权限
+				userSessions[key] = &CommandSession{
+					Command: consts.BotCmdBind,
+					Step:    1,
+					Answers: []string{},
+					Expires: time.Now().Add(5 * time.Minute),
+				}
+
+				sendNextQuestion(bot, chat.ID, key)
+			case consts.BotCmdTopUp:
+				ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, consts.BotCmdTopUp)
+				if !ok {
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					return
+				}
+
+				userSessions[key] = &CommandSession{
+					Command: consts.BotCmdTopUp,
+					Step:    1,
+					Answers: []string{},
+					Expires: time.Now().Add(5 * time.Minute),
+				}
+
+				sendTopUpNextQuestion(bot, chat.ID, key)
+
+			case "cancel":
+				delete(userSessions, key)
+				bot.Send(tgbotapi.NewMessage(chat.ID, "❌ 绑定已取消"))
+			default:
+				bot.Send(tgbotapi.NewMessage(chat.ID, "未知命令"))
+			}
 			return
 		}
-
-		switch cmd {
-		case consts.BotCmdUnbind:
-			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, consts.BotCmdUnbind)
-			if !ok {
-				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
-				return
-			}
-			// 获取更新之前的platform id
-			prePlatformId, _ := GetPrePlatformId(ctx, chat.ID)
-			//	直接更新DB信息
-			_, err := dao.Group.Ctx(ctx).Data(
-				g.Map{
-					"type":               0,
-					"central_control_id": 0,
-				}).
-				Where("group_chat_id = ?", chat.ID).
-				Update()
-			if err != nil {
-				g.Log().Errorf(ctx, "Failed to update group chat: %v", err)
-				newMsg = fmt.Sprintf("Failed to update group chat: %v", err)
-				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
-				return
-			}
-			UpdateDbCentralControl(ctx, prePlatformId)
-			UpdateDbCentralControl(ctx, "0")
-			g.Log().Infof(ctx, "Updated group chat with id [%d]", chat.ID)
-			newMsg = fmt.Sprintf("✅ 解绑成功 Updated group chat with id [%d]", chat.ID)
-			bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
-
-		case consts.BotCmdBind:
-
-			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, consts.BotCmdBind)
-			if !ok {
-				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
-				return
-			}
-
-			// 根据用户ID检查用户权限
-			userSessions[key] = &CommandSession{
-				Command: consts.BotCmdBind,
-				Step:    1,
-				Answers: []string{},
-				Expires: time.Now().Add(5 * time.Minute),
-			}
-
-			sendNextQuestion(bot, chat.ID, key)
-		case consts.BotCmdTopUp:
-			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, consts.BotCmdTopUp)
-			if !ok {
-				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
-				return
-			}
-
-			userSessions[key] = &CommandSession{
-				Command: consts.BotCmdTopUp,
-				Step:    1,
-				Answers: []string{},
-				Expires: time.Now().Add(5 * time.Minute),
-			}
-
-			sendTopUpNextQuestion(bot, chat.ID, key)
-
-		case "cancel":
-			delete(userSessions, key)
-			bot.Send(tgbotapi.NewMessage(chat.ID, "❌ 绑定已取消"))
-		default:
-			bot.Send(tgbotapi.NewMessage(chat.ID, "未知命令"))
-		}
-		return
 	}
-
 	// 非命令：检查是否在会话中
 	if session, ok := userSessions[key]; ok {
 		if time.Now().After(session.Expires) {
@@ -262,6 +285,16 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 		}
 		// 命令判定
 		switch session.Command {
+		//case consts.BotCmdQF1:
+		//	session.Answers = append(session.Answers, msg.Text)
+		//	session.Step++
+		//	if session.Step <= 1 {
+		//		sendNextQf1Question(bot, chat.ID, key)
+		//	} else {
+		//		var groups []entity.Group
+		//		var totalCount int
+		//		err := dao.Group.Ctx(ctx).Where("type = ?", consts.GroupTypeForCustomer).ScanAndCount(groups, &totalCount, false)
+		//	}
 		case consts.BotCmdTopUp:
 			session.Answers = append(session.Answers, msg.Text)
 			session.Step++
@@ -470,6 +503,34 @@ func sendNextQuestion(bot *tgbotapi.BotAPI, chatID int64, key string) {
 		question = "请输入群组类型(客户群输入->1 or 渠道群输入->2)："
 	case 3:
 		question = "请输入客户或者渠道ID"
+	}
+
+	if question != "" {
+		bot.Send(tgbotapi.NewMessage(chatID, question))
+	}
+}
+
+func sendNextQf1Question(bot *tgbotapi.BotAPI, chatID int64, key string) {
+	session := userSessions[key]
+	var question string
+
+	switch session.Step {
+	case 1:
+		question = "请输入群发内容(改内容将会发送至所有已绑定'客户'身份的群聊)："
+	}
+
+	if question != "" {
+		bot.Send(tgbotapi.NewMessage(chatID, question))
+	}
+}
+
+func sendNextQf2Question(bot *tgbotapi.BotAPI, chatID int64, key string) {
+	session := userSessions[key]
+	var question string
+
+	switch session.Step {
+	case 1:
+		question = "请输入群发内容(改内容将会发送至所有已绑定'渠道'身份的群聊)："
 	}
 
 	if question != "" {
