@@ -29,6 +29,7 @@ type CentralControlColumns struct {
 	Note              string //
 	Status            string //
 	SecretKey         string //
+	ApiUsername       string //
 }
 
 // centralControlColumns holds the columns for the table central_control.
@@ -41,6 +42,7 @@ var centralControlColumns = CentralControlColumns{
 	Note:              "note",
 	Status:            "status",
 	SecretKey:         "secret_key",
+	ApiUsername:       "api_username",
 }
 
 // NewCentralControlDao creates and returns a new DAO object for table data access.

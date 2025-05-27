@@ -40,6 +40,7 @@ func (c *ControllerV1) CentralControlList(ctx context.Context, req *v1.CentralCo
 			Name:              central.Name,
 			Domain:            central.Domain,
 			SecretKey:         central.SecretKey,
+			ApiUser:           central.ApiUsername,
 			NumberOfCustomers: central.NumberOfCustomers,
 			NumberOfBusiness:  central.NumberOfBusiness,
 			Note:              central.Note,

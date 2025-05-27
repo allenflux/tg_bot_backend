@@ -15,6 +15,7 @@ import (
 	"tg_bot_backend/internal/consts"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/model/entity"
+	"tg_bot_backend/utility/platform"
 	"time"
 )
 
@@ -182,8 +183,8 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 		}
 
 		switch cmd {
-		case "unbind":
-			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, "unbind")
+		case consts.BotCmdUnbind:
+			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, consts.BotCmdUnbind)
 			if !ok {
 				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
 				return
@@ -210,9 +211,9 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 			newMsg = fmt.Sprintf("✅ 解绑成功 Updated group chat with id [%d]", chat.ID)
 			bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
 
-		case "bind":
+		case consts.BotCmdBind:
 
-			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, "bind")
+			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, consts.BotCmdBind)
 			if !ok {
 				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
 				return
@@ -220,13 +221,29 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 
 			// 根据用户ID检查用户权限
 			userSessions[key] = &CommandSession{
-				Command: "bind",
+				Command: consts.BotCmdBind,
 				Step:    1,
 				Answers: []string{},
 				Expires: time.Now().Add(5 * time.Minute),
 			}
 
 			sendNextQuestion(bot, chat.ID, key)
+		case consts.BotCmdTopUp:
+			ok, newMsg := checkUserPermission(ctx, chat.ID, user.ID, consts.BotCmdTopUp)
+			if !ok {
+				bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+				return
+			}
+
+			userSessions[key] = &CommandSession{
+				Command: consts.BotCmdTopUp,
+				Step:    1,
+				Answers: []string{},
+				Expires: time.Now().Add(5 * time.Minute),
+			}
+
+			sendTopUpNextQuestion(bot, chat.ID, key)
+
 		case "cancel":
 			delete(userSessions, key)
 			bot.Send(tgbotapi.NewMessage(chat.ID, "❌ 绑定已取消"))
@@ -243,54 +260,202 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 			bot.Send(tgbotapi.NewMessage(chat.ID, "⏰ 会话超时，请重新输入 /bind@"+bot.Self.UserName))
 			return
 		}
+		// 命令判定
+		switch session.Command {
+		case consts.BotCmdTopUp:
+			session.Answers = append(session.Answers, msg.Text)
+			session.Step++
+			if session.Step <= 2 {
+				sendTopUpNextQuestion(bot, chat.ID, key)
+			} else {
+				//	valid amount
+				amount, err := strconv.Atoi(session.Answers[1])
+				if err != nil {
+					g.Log().Infof(ctx, "[%s] amount Conver Error ", err.Error())
+					newMsg := fmt.Sprintf("❌ 充值失败 [%s] Please make sure the amount you enter is a number %s ", session.Answers[1], err.Error())
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					delete(userSessions, key)
+					return
+				}
 
-		// 收集用户输入
-		session.Answers = append(session.Answers, msg.Text)
-		session.Step++
-		result := ""
-		bindSuccessful := true
-		if session.Step <= 2 {
-			sendNextQuestion(bot, chat.ID, key)
-		} else {
-			result = fmt.Sprintf("✅ 绑定成功：\n中控平台ID：%s\n群类型：%s",
-				session.Answers[0], session.Answers[1])
-			// Verify Group Type
-			if _, ok := validAnswersOfGroupType[session.Answers[1]]; !ok {
-				g.Log().Errorf(ctx, "[%s] Invalid group type", session.Answers[1])
-				result = fmt.Sprintf("❌ 绑定失败 [%s] Invalid group type", session.Answers[1])
-				bindSuccessful = false
+				if amount <= 0 {
+					g.Log().Infof(ctx, " Please make sure the amount is an integer greater than 0 ")
+					newMsg := fmt.Sprintf("❌ 充值失败 [%s] Please make sure the amount is an integer greater than 0 %s ", session.Answers[1], err.Error())
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					delete(userSessions, key)
+					return
+				}
+
+				//	Get group info
+				var group entity.Group
+				var totalCount int
+				if err = dao.Group.Ctx(ctx).
+					Where("group_chat_id = ?", chat.ID).
+					Where("type = ?", consts.GroupTypeForCustomer).
+					ScanAndCount(&group, &totalCount, false); err != nil {
+					g.Log().Infof(ctx, "[%s] DB Scan Group Error", session.Answers[0])
+					newMsg := fmt.Sprintf("❌ 充值失败 [%s] DB Scan Group Error %s ", session.Answers[1], err.Error())
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					delete(userSessions, key)
+					return
+				}
+				if totalCount == 0 {
+					g.Log().Infof(ctx, "[%s] DB Scan Group Success But totalCount == 0", session.Answers[0])
+					newMsg := fmt.Sprintf("❌ 充值失败 [%s], 请确定当前群组是客户群 DB Scan Group Success But totalCount == 0 ", session.Answers[1])
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					delete(userSessions, key)
+					return
+				}
+
+				// get platform info
+				var PlatformInfo entity.CentralControl
+				if err = dao.CentralControl.Ctx(ctx).
+					Where("id = ?", group.CentralControlId).
+					Scan(&PlatformInfo); err != nil {
+					g.Log().Infof(ctx, "[%s] DB Scan CentralControl Error", session.Answers[0])
+					newMsg := fmt.Sprintf("❌ 充值失败 [%s] DB Scan CentralControl Error %s ", session.Answers[1], err.Error())
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					delete(userSessions, key)
+					return
+				}
+
+				apiToken, err := platform.GetPlatformToken(ctx, PlatformInfo.Domain, PlatformInfo.ApiUsername, PlatformInfo.SecretKey)
+
+				if err != nil {
+					g.Log().Infof(ctx, "[%s] Api Error ", err.Error())
+					newMsg := fmt.Sprintf("❌ 充值失败 [%s] Api Error %s ", session.Answers[0], err.Error())
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					delete(userSessions, key)
+					return
+				}
+
+				if ok, err = platform.AddCustomerFind(ctx, PlatformInfo.Domain, apiToken, group.CustomerId, amount); err != nil {
+					g.Log().Errorf(ctx, "[%s] AddCustomerFind Error, Error %s ", session.Answers[1], err.Error())
+					newMsg := fmt.Sprintf("❌ 充值失败 [%s] AddCustomerFind Errorr, Error %s ", session.Answers[1], err.Error())
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					delete(userSessions, key)
+					return
+				} else if ok {
+					g.Log().Infof(ctx, "[%s] AddCustomerFind  Success", session.Answers[1])
+					newMsg := fmt.Sprintf(" ✅ 充值成功 [%s] AddCustomerFind Successful ", session.Answers[1])
+					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
+					delete(userSessions, key)
+					return
+				}
+
 			}
-			// Verify And Action By DB
-			if has, err := dao.CentralControl.Ctx(ctx).Where("id = ?", session.Answers[0]).Where("status = ?", consts.CentralControlStatusAvailable).Exist(); err != nil {
-				g.Log().Errorf(ctx, "Failed to check if [%s] exists or Status is Available: %v", session.Answers[0], err)
-				result = fmt.Sprintf("❌ 绑定失败 Failed to check if [%s] exists: %v", session.Answers[0], err)
-				bindSuccessful = false
-			} else if !has {
-				g.Log().Infof(ctx, "[%s] not exists", session.Answers[0])
-				result = fmt.Sprintf("❌ 绑定失败 [%s] not exists or Status is UnAvailable", session.Answers[0])
-				bindSuccessful = false
-			}
 
-			if bindSuccessful {
-				// 获取更新之前的platform id
-				prePlatformId, _ := GetPrePlatformId(ctx, chat.ID)
+		case consts.BotCmdBind:
+			// 收集用户输入
+			session.Answers = append(session.Answers, msg.Text)
+			session.Step++
+			result := ""
+			bindSuccessful := true
+			if session.Step <= 3 {
+				sendNextQuestion(bot, chat.ID, key)
+			} else {
+				result = fmt.Sprintf("✅ 绑定成功：\n中控平台ID：%s\n群类型：%s",
+					session.Answers[0], session.Answers[1])
+				// Verify Group Type
+				if _, ok := validAnswersOfGroupType[session.Answers[1]]; !ok {
+					g.Log().Errorf(ctx, "[%s] Invalid group type", session.Answers[1])
+					result = fmt.Sprintf("❌ 绑定失败 [%s] Invalid group type", session.Answers[1])
+					bindSuccessful = false
+				}
+				// Verify And Action By DB
+				if has, err := dao.CentralControl.Ctx(ctx).Where("id = ?", session.Answers[0]).Where("status = ?", consts.CentralControlStatusAvailable).Exist(); err != nil {
+					g.Log().Errorf(ctx, "Failed to check if [%s] exists or Status is Available: %v", session.Answers[0], err)
+					result = fmt.Sprintf("❌ 绑定失败 Failed to check if [%s] exists: %v", session.Answers[0], err)
+					bindSuccessful = false
+				} else if !has {
+					g.Log().Infof(ctx, "[%s] not exists", session.Answers[0])
+					result = fmt.Sprintf("❌ 绑定失败 [%s] not exists or Status is UnAvailable", session.Answers[0])
+					bindSuccessful = false
+				}
 
-				_, err := dao.Group.Ctx(ctx).Where("group_chat_id = ?", chat.ID).Data(
-					g.Map{
+				// get platform info
+				var PlatformInfo entity.CentralControl
+				if err := dao.CentralControl.Ctx(ctx).
+					Where("id = ?", session.Answers[0]).
+					Scan(&PlatformInfo); err != nil {
+					g.Log().Infof(ctx, "[%s] DB Scan CentralControl Error", session.Answers[0])
+					result = fmt.Sprintf("❌ 绑定失败 [%s] DB Scan CentralControl Error", session.Answers[0])
+					bindSuccessful = false
+				}
+
+				userInputId, err := strconv.Atoi(session.Answers[2])
+				if err != nil {
+					g.Log().Infof(ctx, "[%s] userInputId Conver Error ", err.Error())
+					result = fmt.Sprintf("❌ 绑定失败 [%s] userInputId %s ", session.Answers[2], err.Error())
+					bindSuccessful = false
+				}
+
+				if userInputId < 0 {
+					g.Log().Infof(ctx, "[%s] userInputId Error ", session.Answers[2])
+					result = fmt.Sprintf("❌ 绑定失败 输入userInputId不能小于0 [%s] userInputId  ", session.Answers[2])
+					bindSuccessful = false
+				}
+
+				apiToken, err := platform.GetPlatformToken(ctx, PlatformInfo.Domain, PlatformInfo.ApiUsername, PlatformInfo.SecretKey)
+
+				if err != nil {
+					g.Log().Infof(ctx, "[%s] Api Error ", err.Error())
+					result = fmt.Sprintf("❌ 绑定失败 [%s] Api Error %s ", session.Answers[0], err.Error())
+					bindSuccessful = false
+				}
+
+				verifySuccessful := true
+				if bindSuccessful {
+					// 获取更新之前的platform id
+					prePlatformId, _ := GetPrePlatformId(ctx, chat.ID)
+
+					data := g.Map{
 						"central_control_id": session.Answers[0],
 						"type":               session.Answers[1],
-					},
-				).Update()
-				if err != nil {
-					g.Log().Errorf(ctx, "Failed to update group")
-					result = fmt.Sprintf("Failed to update group [%s] %s", session.Answers[0], err.Error())
+					}
+					switch cmd, _ := strconv.Atoi(session.Answers[1]); cmd {
+					case consts.GroupTypeForCustomer:
+						if ok, err = platform.VerifyCustomerId(ctx, PlatformInfo.Domain, apiToken, userInputId); err != nil {
+							verifySuccessful = false
+							g.Log().Errorf(ctx, "[%s] Verification Customer Error, Error %s ", session.Answers[2], err.Error())
+							result = fmt.Sprintf("❌ 绑定失败 [%s] Verification Customer Error, Error %s ", session.Answers[2], err.Error())
+						} else if ok {
+							g.Log().Infof(ctx, "[%s] Customer Verification  Success", session.Answers[2])
+							data["customer_id"] = session.Answers[2]
+							data["business_id"] = 0
+						}
+					case consts.GroupTypeForBusiness:
+						if ok, err = platform.VerifyBusinessId(ctx, PlatformInfo.Domain, apiToken, strconv.Itoa(userInputId)); err != nil {
+							verifySuccessful = false
+							g.Log().Errorf(ctx, "[%s] Verification Business Error, Error %s ", session.Answers[2], err.Error())
+							result = fmt.Sprintf("❌ 绑定失败 [%s] Verification Business Error, Error %s ", session.Answers[2], err.Error())
+						} else if ok {
+							g.Log().Infof(ctx, "[%s] Business Verification  Success", session.Answers[2])
+							data["customer_id"] = 0
+							data["business_id"] = session.Answers[2]
+						}
+					default:
+						panic("unhandled default case")
+
+					}
+					if verifySuccessful {
+
+						_, err := dao.Group.Ctx(ctx).Where("group_chat_id = ?", chat.ID).Data(
+							data,
+						).Update()
+						if err != nil {
+							g.Log().Errorf(ctx, "Failed to update group")
+							result = fmt.Sprintf("Failed to update group [%s] %s", session.Answers[0], err.Error())
+						}
+						UpdateDbCentralControl(ctx, prePlatformId)
+						UpdateDbCentralControl(ctx, session.Answers[0])
+					}
 				}
-				UpdateDbCentralControl(ctx, prePlatformId)
-				UpdateDbCentralControl(ctx, session.Answers[0])
+				bot.Send(tgbotapi.NewMessage(chat.ID, result))
+				delete(userSessions, key)
 			}
-			bot.Send(tgbotapi.NewMessage(chat.ID, result))
-			delete(userSessions, key)
 		}
+
 	}
 }
 
@@ -303,6 +468,24 @@ func sendNextQuestion(bot *tgbotapi.BotAPI, chatID int64, key string) {
 		question = "请输入中控平台ID："
 	case 2:
 		question = "请输入群组类型(客户群输入->1 or 渠道群输入->2)："
+	case 3:
+		question = "请输入客户或者渠道ID"
+	}
+
+	if question != "" {
+		bot.Send(tgbotapi.NewMessage(chatID, question))
+	}
+}
+
+func sendTopUpNextQuestion(bot *tgbotapi.BotAPI, chatID int64, key string) {
+	session := userSessions[key]
+	var question string
+
+	switch session.Step {
+	case 1:
+		question = "请输入汇款银行名称:"
+	case 2:
+		question = "请输入加款金额:"
 	}
 
 	if question != "" {

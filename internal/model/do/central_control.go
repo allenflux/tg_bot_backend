@@ -19,4 +19,5 @@ type CentralControl struct {
 	Note              interface{} //
 	Status            interface{} //
 	SecretKey         interface{} //
+	ApiUsername       interface{} //
 }

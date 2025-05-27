@@ -20,4 +20,6 @@ type Group struct {
 	BotSize          interface{} //
 	RoleSize         interface{} //
 	GroupChatId      interface{} //
+	CustomerId       interface{} //
+	BusinessId       interface{} //
 }

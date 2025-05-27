@@ -17,6 +17,7 @@ type CentralControlMap struct {
 	Name              string `json:"name"`
 	Domain            string `json:"domain"`
 	SecretKey         string `json:"secret_key"`
+	ApiUser           string `json:"api_user"`
 	NumberOfCustomers int    `json:"number_of_customers"`
 	NumberOfBusiness  int    `json:"number_of_business"`
 	Note              string `json:"note"`
@@ -33,6 +34,7 @@ type UpdateCentralControlReq struct {
 	Name      string `json:"name" v:"required"`
 	Domain    string `json:"domain" v:"required"`
 	SecretKey string `json:"secret_key" v:"required"`
+	ApiUser   string `json:"api_user" v:"required" dc:"访问中控平台登录使用的用户名"`
 	Note      string `json:"note" `
 }
 

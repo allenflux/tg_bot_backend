@@ -30,6 +30,8 @@ type GroupColumns struct {
 	BotSize          string //
 	RoleSize         string //
 	GroupChatId      string //
+	CustomerId       string //
+	BusinessId       string //
 }
 
 // groupColumns holds the columns for the table group.
@@ -43,6 +45,8 @@ var groupColumns = GroupColumns{
 	BotSize:          "bot_size",
 	RoleSize:         "role_size",
 	GroupChatId:      "group_chat_id",
+	CustomerId:       "customer_id",
+	BusinessId:       "business_id",
 }
 
 // NewGroupDao creates and returns a new DAO object for table data access.

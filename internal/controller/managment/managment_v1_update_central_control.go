@@ -7,11 +7,20 @@ import (
 	"tg_bot_backend/internal/consts"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/model/entity"
+	"tg_bot_backend/utility/platform"
 
 	"tg_bot_backend/api/managment/v1"
 )
 
 func (c *ControllerV1) UpdateCentralControl(ctx context.Context, req *v1.UpdateCentralControlReq) (res *v1.UpdateCentralControlRes, err error) {
+
+	_, err = platform.GetPlatformToken(ctx, req.Domain, req.ApiUser, req.SecretKey)
+
+	if err != nil {
+		g.Log().Errorf(ctx, "GetPlatformToken err:%v", err)
+		return nil, err
+	}
+
 	data := &entity.CentralControl{
 		Name:              req.Name,
 		Domain:            req.Domain,
@@ -20,6 +29,7 @@ func (c *ControllerV1) UpdateCentralControl(ctx context.Context, req *v1.UpdateC
 		Note:              req.Note,
 		Status:            consts.CentralControlStatusAvailable,
 		SecretKey:         req.SecretKey,
+		ApiUsername:       req.ApiUser,
 	}
 	_, err = dao.CentralControl.Ctx(ctx).
 		Data(data).

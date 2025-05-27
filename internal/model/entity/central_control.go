@@ -14,4 +14,5 @@ type CentralControl struct {
 	Note              string `json:"note"              orm:"note"                description:""` //
 	Status            int    `json:"status"            orm:"status"              description:""` //
 	SecretKey         string `json:"secretKey"         orm:"secret_key"          description:""` //
+	ApiUsername       string `json:"apiUsername"       orm:"api_username"        description:""` //
 }

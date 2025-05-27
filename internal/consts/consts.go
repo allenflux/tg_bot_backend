@@ -39,6 +39,13 @@ const (
 	GreetingStatusUnAvailable
 )
 
+const (
+	PlatformPathLogin        = "/api/login_admin"
+	PlatformVerifyCustomerId = "/api/customer/query"
+	PlatformVerifyBusinessId = "/api/admin/channel/detail/"
+	PlatformAddCustomerFind  = "/api/customer/finance/add"
+)
+
 var UserPermissionMap = map[string]int{
 	"管理员": 1,
 }
