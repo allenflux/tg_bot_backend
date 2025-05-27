@@ -36,6 +36,8 @@ type GroupMap struct {
 	PlatformIdAndGroupId string `json:"platform_id_and_group_id"`
 	AssociatedRobot      int    `json:"associated_robot"`
 	AssociatedRole       int    `json:"associated_role"`
+	CustomerId           int    `json:"customer_id"`
+	BusinessId           int    `json:"business_id"`
 }
 
 type GetGroupListRes struct {

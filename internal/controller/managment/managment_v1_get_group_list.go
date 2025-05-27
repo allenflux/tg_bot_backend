@@ -59,6 +59,8 @@ func (c *ControllerV1) GetGroupList(ctx context.Context, req *v1.GetGroupListReq
 			PlatformIdAndGroupId: fmt.Sprintf("%d+%d", v.CentralControlId, v.Id),
 			AssociatedRobot:      v.BotSize,
 			AssociatedRole:       v.RoleSize,
+			CustomerId:           v.CustomerId,
+			BusinessId:           v.BusinessId,
 		}
 	}
 	return res, err
