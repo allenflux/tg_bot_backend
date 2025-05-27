@@ -32,6 +32,7 @@ func (c *ControllerV1) GetBindTgUsers(ctx context.Context, req *v1.GetBindTgUser
 			Name:      user.TgName,
 			TgAccount: user.TgAccount,
 			ID:        user.Id,
+			GroupID:   user.GroupId,
 		}
 	}
 	return res, nil

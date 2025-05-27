@@ -117,6 +117,7 @@ type BindTgUsersData struct {
 	Name      string `json:"name" dc:"<UNK>"`
 	TgAccount string `json:"account" dc:"<UNK>"`
 	ID        int    `json:"id" dc:"<UNK>id"`
+	GroupID   int    `json:"group_id" dc:"<<UNK>ID>"`
 }
 
 type GetBindTgUsersRes struct {
