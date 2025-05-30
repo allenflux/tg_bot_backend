@@ -6,15 +6,26 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/gogf/gf/v2/frame/g"
 	"strconv"
+	"tg_bot_backend/api/managment/v1"
 	bot2 "tg_bot_backend/internal/bot"
 	"tg_bot_backend/internal/consts"
 	"tg_bot_backend/internal/dao"
 	"tg_bot_backend/internal/model/entity"
-
-	"tg_bot_backend/api/managment/v1"
 )
 
 func (c *ControllerV1) AddBot(ctx context.Context, req *v1.AddBotReq) (res *v1.AddBotRes, err error) {
+	if ok, err := g.Redis().Exists(ctx, req.BotToken); err != nil {
+		g.Log().Error(ctx, err)
+		return nil, err
+	} else if ok == 1 {
+		g.Log().Errorf(ctx, " Bots [%s] are being added.", req.BotToken)
+		return nil, fmt.Errorf("  Bots [%s] are being added.", req.BotToken)
+	}
+	if err = g.Redis().SetEX(ctx, req.BotToken, req.BotToken, 5); err != nil {
+		g.Log().Error(ctx, err)
+		return nil, err
+	}
+
 	if ok, err := dao.Bot.Ctx(ctx).Where("bot_token = ?", req.BotToken).Exist(); err != nil {
 		g.Log().Errorf(ctx, "Failed to check if [%s] exists: %v", req.BotToken, err)
 		return nil, fmt.Errorf(" Failed to check if [%s] exists: %v", req.BotToken, err)
