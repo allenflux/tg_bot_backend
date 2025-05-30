@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	_ "github.com/gogf/gf/contrib/drivers/mysql/v2"
 	_ "github.com/gogf/gf/contrib/nosql/redis/v2"
 	"github.com/gogf/gf/v2/frame/g"
@@ -25,6 +24,5 @@ func main() {
 	bot.InitBotApiChanFromMysql(ctx, bot.AwesomeBotApiChan)
 	go bot.MakeBotApiClientPipLine(ctx, bot.AwesomeBotApiChan)
 	go bot.MakeTgGroupPipLine(ctx, bot.AwesomeGroupChan)
-	fmt.Print("11111111111111111111111111111")
 	cmd.Main.Run(ctx)
 }
