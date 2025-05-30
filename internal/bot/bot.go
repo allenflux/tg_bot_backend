@@ -313,7 +313,7 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 
 				if amount <= 0 {
 					g.Log().Infof(ctx, " Please make sure the amount is an integer greater than 0 ")
-					newMsg := fmt.Sprintf("❌ 充值失败 [%s] Please make sure the amount is an integer greater than 0 %s ", session.Answers[1], err.Error())
+					newMsg := fmt.Sprintf("❌ 充值失败 [%s] Please make sure the amount is an integer greater than 0 ", session.Answers[1])
 					bot.Send(tgbotapi.NewMessage(chat.ID, newMsg))
 					delete(userSessions, key)
 					return
