@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-var AwesomeBotApiChan = make(chan *tgbotapi.BotAPI, 1)
+var AwesomeBotApiChan = make(chan *tgbotapi.BotAPI, 100)
 
 type GroupPayload struct {
 	ID           string `json:"id"`
