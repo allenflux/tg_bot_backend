@@ -28,7 +28,7 @@ type GroupPayload struct {
 	Title        string `json:"title"`
 }
 
-var AwesomeGroupChan = make(chan *GroupPayload, 1000)
+var AwesomeGroupChan = make(chan *GroupPayload, 1)
 
 func InitBotApiChanFromMysql(ctx context.Context, payload chan<- *tgbotapi.BotAPI) {
 	dbQuery := dao.Bot.Ctx(ctx).
