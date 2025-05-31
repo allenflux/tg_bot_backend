@@ -28,7 +28,7 @@ type GroupPayload struct {
 	Title        string `json:"title"`
 }
 
-var AwesomeGroupChan = make(chan *GroupPayload, 100)
+var AwesomeGroupChan = make(chan *GroupPayload, 1000)
 
 func InitBotApiChanFromMysql(ctx context.Context, payload chan<- *tgbotapi.BotAPI) {
 	dbQuery := dao.Bot.Ctx(ctx).
@@ -153,8 +153,8 @@ func Program(ctx context.Context, bot *tgbotapi.BotAPI) {
 	}
 }
 
-func sessionKey(userID int64, chatID int64) string {
-	return fmt.Sprintf("%d:%d", userID, chatID)
+func sessionKey(botID, userID int64, chatID int64) string {
+	return fmt.Sprintf("%d:%d:%d", botID, userID, chatID)
 }
 
 var validAnswersOfGroupType = map[string]bool{
@@ -166,7 +166,7 @@ func handleUpdate(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi.Upd
 	msg := update.Message
 	chat := msg.Chat
 	user := msg.From
-	key := sessionKey(user.ID, chat.ID)
+	key := sessionKey(bot.Self.ID, user.ID, chat.ID)
 
 	if chat.IsPrivate() {
 		return
@@ -904,7 +904,7 @@ func handleNewMembers(ctx context.Context, bot *tgbotapi.BotAPI, update tgbotapi
 		g.Log().Infof(ctx, "New chat member %s", newUser.UserName)
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, welcomeText)
 		msg.ReplyToMessageID = update.Message.MessageID
-
+		g.Log().Infof(ctx, "msg %v", msg)
 		if _, err := bot.Send(msg); err != nil {
 			g.Log().Errorf(ctx, "handleNewMembers Send Msg Error: %v", err)
 		}
